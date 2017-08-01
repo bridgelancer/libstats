@@ -16,9 +16,10 @@ public:
     void setObservation(arma::vec observation);
 
     void evaluate();     
-
+    
+    void loadDesign(const std::string& filename); //parse the reference of the filename string to load function
     void saveBetaCSV() const;//save evaulated beta file to a csv of the same directory
-        
+            
 private:
     arma::mat design;
     arma::vec observation;

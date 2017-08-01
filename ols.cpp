@@ -36,9 +36,25 @@ void ols::setObservation(arma::vec obs)
 
 void ols::evaluate()
 {
-    beta = (design.t()*design).i() * design.t() * observation; 
+    beta = ( design.t() * design ).i() * design.t() * observation; 
 }
 
+void ols::loadDesign(const std::string& filename)
+{
+    arma::mat A = arma::mat();
+    bool status = A.load(filename);
+    
+    if(status == true)
+    {
+        std::cout << "successfully loaded" << std::endl;
+    }
+    else
+    {
+        std::cout << "problem with loading" << std::endl;
+    }
+
+    design = A;
+}
 
 //not yet implemented
 void ols::saveBetaCSV() const
