@@ -1,6 +1,9 @@
 //The class ols constructs a object which process a design matrix of dimensions 
 //m x n and observation vector m x 1 and evaulate the estimator vector beta of dimensions n x 1.
 
+//This is currently a unstable version - further improvement should be osought on optimizing function
+//loadDesign and the saveBetaCSV.
+
 #include <armadillo>
 
 class ols {

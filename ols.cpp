@@ -39,6 +39,7 @@ void ols::evaluate()
     beta = ( design.t() * design ).i() * design.t() * observation; 
 }
 
+//need to be optimized, currently running at low speed
 void ols::loadDesign(const std::string& filename)
 {
     arma::mat A = arma::mat();
@@ -56,6 +57,8 @@ void ols::loadDesign(const std::string& filename)
     design = A;
 }
 
-//not yet implemented
+//save beta to a csv file with filename "beta.mat"
 void ols::saveBetaCSV() const
-{ }
+{
+    beta.save("beta.mat", arma::csv_ascii);
+}
