@@ -3,27 +3,30 @@
 #include <armadillo>
 #include <iostream>
 
-adf::adf(std::string option):
+adf::adf(OPTIONS option):
     option(option),
     y(arma::vec()),
     design_adf(arma::mat()),
     beta(arma::vec()),
     regression(arma::mat(), arma::vec())
 { }
-adf::adf(std::string option, arma::vec y):
+
+adf::adf(OPTIONS option, arma::vec y):
     option(option),
     y(y),
     design_adf(arma::mat()),
     beta(arma::vec()),
     regression(arma::vec(), y)
 { }
-adf::adf(std::string, arma::mat design_adf, arma::vec y):
+
+adf::adf(OPTIONS, arma::mat design_adf, arma::vec y):
     option(option),
     y(y),
     design_adf(design_adf),
     beta(arma::vec()),
     regression(design_adf, y)
 { }
+
 void adf::getDesign_adf() const
 {
     design_adf.print("design:");
@@ -51,11 +54,23 @@ void adf::setObservation(arma::vec obs)
     regression.setObservation(obs);
 }
 
-void adf::evaluatePhi(std::string option)
-{ }
+void adf::evaluatePhi(OPTIONS option)
+{ 
+    switch (option) { 
+        case OPTIONS::DF:
+            
+        case OPTIONS::ADF:
+    ;}            
+}
 
-void adf::evaluateSE(std::string option)
-{ }
+void adf::evaluateSE(OPTIONS option)
+{ 
+    switch (option) { 
+        case OPTIONS::DF:
+            
+        case OPTIONS::ADF:
+    ;}            
+}}
 
 void adf::loadDesign(const std::string& filename)
 { 

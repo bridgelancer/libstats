@@ -5,11 +5,16 @@
 
 #include "../OLS/ols.h"
 
+enum class OPTIONS{
+    DF,
+    ADF
+};
+
 class adf{
 public:
-    adf(std::string option);
-    adf(std::string option, arma::vec y);
-    adf(std::string option, arma::mat design_adf, arma::vec y);
+    adf(OPTIONS option);
+    adf(OPTIONS option, arma::vec y);
+    adf(OPTIONS option, arma::mat design_adf, arma::vec y);
     
     void getDesign_adf() const;
     void getObservation() const;
@@ -18,8 +23,8 @@ public:
     void setDesign(arma::mat design);
     void setObservation(arma::vec observation);
 
-    void evaluatePhi(std::string option);
-    void evaluateSE(std::string option);
+    void evaluatePhi(OPTIONS option);
+    void evaluateSE(OPTIONS option);
  
     void loadDesign(const std::string& filename);
     void saveBetaCSV();
@@ -29,9 +34,8 @@ private:
     arma::vec y; //The time-series data, notably the stock price
     double phi;
     double se_phi;
-    
-    std::string option;
-    
+   
+    OPTIONS option; 
     //ols regression; //call the ols(arma::mat design_adf, arma::vec y) constructor   
 
     arma::mat design_adf;
