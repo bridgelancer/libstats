@@ -72,41 +72,51 @@ void adf::evaluateSE(OPTIONS option)
 
 void adf::evaluatePhi(OPTIONS option, int k)
 { 
-    arma::vec y_ = arma::vec(); //y_ is the y_{t-1} of y
+    std::cout << "evaluatePhi called"<< std::endl;
+
+    arma::vec y_ = arma::vec(y.n_elem); //y_ is the y_{t-1} of y
     
     y_(0) = 0;
     
-    for (int i = 1; i<y.size(); i++){
+    for (int i = 1; i<y.n_elem; i++){
         y_(i) = y(i-1);
     }
     
     switch (option) { 
         {case OPTIONS::DF:
-            arma::vec product = y%y_;
-            phi = sum(product)/sum(y%y);
+            arma::vec product = y%y_;       
+            product.print();
+            
+            arma::vec denom = y%y;
+            phi = sum(product)/sum(denom);
+            std::cout << phi << std::endl;
+            break;
         }    
         
         {case OPTIONS::ADF:
-            arma::mat fix; //n*3 arma matrix
-            arma::mat lag; //n*k arma matrix, where k is the number of lag terms in consideration 
+            arma::mat fix = arma::mat(y.n_elem, 3); //n*3 arma matrix
+            arma::mat lag = arma::mat(y.n_elem, k);; //n*k arma matrix, where k is the number of lag terms in consideration 
             
-            for (int i = 0; i<y.size(); i++){
+            for (int i = 0; i<y.n_elem; i++){
                 fix(i,0) = 1;
                 fix(i,1) = y_(i);
                 fix(i,2) = i+1;
             } 
+            fix.print("fix:");
 
             //fix = [1,y_0,0; 1,y_1,1; ... ; 1,y_n-1,n]
-            arma::vec y_plusone = arma::vec(y.size()+1);
+            arma::vec y_plusone = arma::vec(y.n_elem+1);
 
             y_plusone(0) = 0;
             
-            for (int i = 0; i<y.size(); i++){
+            for (int i = 0; i < y.n_elem; i++){
                 y_plusone(i+1) = y(i);
             }
-
-            for (int i = 0; i<y.size(); i++){              //loop through y.size() # of rows
-                for(int count = 0; count <k-1; count++){     //loop through k # fo columns
+            
+            y_plusone.print("y_plusone");
+            
+            for (int i = 0; i < y.n_elem; i++){              //loop through y.n_elem # of rows
+                for(int count = 0; count <k; count++){     //loop through k # fo columns
                     if (i < count + 1)                           //if the time elapsed i is smaller than lagtime
                         lag(i,count) = 0;
                     else
@@ -114,15 +124,22 @@ void adf::evaluatePhi(OPTIONS option, int k)
                 } 
             }
             
+            lag.print("lag:");
+                
             lag.insert_cols(0, fix);
+
+            lag.print("lag:");            
+
             design_adf = lag;           
- 
+            
+
             regression.setDesign(design_adf);
             regression.setObservation(y);
             
             regression.evaluate();
 
             beta = regression.getBeta();            
+            break;
         }
     }            
 }

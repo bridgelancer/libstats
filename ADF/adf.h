@@ -29,10 +29,11 @@ public:
     void loadDesign(const std::string& filename);
     void saveBetaCSV();
 
+    double phi;
     ols regression; //temporary public; for testing purposes only****
 private:      
     arma::vec y; //The time-series data, notably the stock price
-    double phi;
+   
     double se_phi;
    
     OPTIONS option; 

@@ -14,7 +14,9 @@ int main(){
       
     vec y = vec(4);
     y = ("0.1 0.2 0.3 0.6");
-    
+        
+    cout << y(1);
+    cout << y(2);
     
     testing.loadDesign("A.mat");
     testing.setObservation(y);

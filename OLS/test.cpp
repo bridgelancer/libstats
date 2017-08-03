@@ -14,8 +14,10 @@ int main(){
     testing.getDesign();
     testing.getObservation();
     testing.getBeta();
-      
-        
+    
+    cout << y(1) << endl;
+    cout << y(2) << endl;  
+            
     testing.loadDesign("A.mat");
     testing.setObservation(y);
 

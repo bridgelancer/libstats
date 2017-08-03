@@ -10,20 +10,17 @@ int main()
 {
     OPTIONS options;
     adf testing = adf(OPTIONS::DF);
+    
+    arma_rng::set_seed_random();
 
-    vec y = vec(4);
-    y = ("0.1 0.2 0.3 0.6");
+    vec y(10); y.randu();
 
-    testing.loadDesign("A.mat");
     testing.setObservation(y);
-    
-    testing.regression.getDesign();
-    testing.regression.getObservation();
-    testing.regression.evaluate();
-    arma::vec beta = testing.regression.getBeta();
+     
+    testing.evaluatePhi(OPTIONS::ADF,5);    
 
-    beta.print("beta:");
-    
+  
+
 
     return 0;   
 }
