@@ -14,7 +14,7 @@ class adf{
 public:
     adf(OPTIONS option);
     adf(OPTIONS option, arma::vec y);
-    adf(OPTIONS option, arma::mat design_adf, arma::vec y);
+    adf(OPTIONS option, arma::mat design_adf, arma::vec y, int k);
     
     void getDesign_adf() const;
     void getObservation() const;
@@ -23,7 +23,7 @@ public:
     void setDesign(arma::mat design);
     void setObservation(arma::vec observation);
 
-    void evaluatePhi(OPTIONS option);
+    void evaluatePhi(OPTIONS option, int k);
     void evaluateSE(OPTIONS option);
  
     void loadDesign(const std::string& filename);
@@ -36,6 +36,7 @@ private:
     double se_phi;
    
     OPTIONS option; 
+    int k;
     //ols regression; //call the ols(arma::mat design_adf, arma::vec y) constructor   
 
     arma::mat design_adf;

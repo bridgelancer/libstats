@@ -1,4 +1,4 @@
-CXX = g++
+CXX = g++ -std=c++11
 INCLUDES = -I/OLS -I/ADF
 LDFLAGS = -larmadillo -llapack -lblas
 CXXFLAGS = -O2

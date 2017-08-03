@@ -8,7 +8,8 @@ using namespace arma;
 
 int main()
 {
-    adf testing = adf("df");
+    OPTIONS options;
+    adf testing = adf(OPTIONS::DF);
 
     vec y = vec(4);
     y = ("0.1 0.2 0.3 0.6");
