@@ -9,10 +9,11 @@
 class ols {
 public:
     ols();
-    
+    ols(arma::mat design, arma::vec observation);
+        
     void getDesign() const;
     void getObservation() const;
-    void getBeta() const;
+    arma::vec getBeta() const;
     
     void setDesign(arma::mat design);
 

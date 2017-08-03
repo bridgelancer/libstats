@@ -1,15 +1,15 @@
 CXX = g++
-INCLUDES =
+INCLUDES = -I/OLS -I/ADF
 LDFLAGS = -larmadillo -llapack -lblas
 CXXFLAGS = -O2
 
 OBJS =
 
-main: $(OBJS) main.cpp
-	$(CXX) $^ -o $@ $(CXXFLAGS) $(LDFLAGS)
+main: $(OBJS) main.cpp ADF/adf.cpp OLS/ols.cpp
+	$(CXX)  -IOLS   -IADF   $^ -o $@ $(CXXFLAGS) $(LDFLAGS)
 
-test: $(OBJS) test.cpp ols.h ols.cpp
-	$(CXX) $^ -o $@ $(CXXFLAGS) $(LDFLAGS)
+
+
 
 
 clean:

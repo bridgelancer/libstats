@@ -9,6 +9,12 @@ ols::ols():
     beta(arma::vec())
 { }
 
+ols::ols(arma::mat d, arma::vec obs):
+    design(d),
+    observation(obs),
+    beta(arma::vec())
+{ }
+
 void ols::getDesign() const
 {
     design.print("design:");
@@ -19,9 +25,10 @@ void ols::getObservation() const
     observation.print("observation:");
 }
 
-void ols::getBeta() const
+arma::vec ols::getBeta() const
 {
     beta.print("beta:");
+    return beta;
 }
 
 void ols::setDesign(arma::mat d)

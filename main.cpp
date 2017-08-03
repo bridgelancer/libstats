@@ -1,35 +1,28 @@
 #include <iostream>
 #include <armadillo>
 
+#include "ADF/adf.h"
+
 using namespace std;
 using namespace arma;
 
 int main()
 {
-    mat A = mat(); 
-    vec x = vec();
+    adf testing = adf("df");
 
-    cout << x << endl;
-       
-    vec Y = vec(4);
-    Y(0) = 0.1;
-    Y(1) = 0.2;
-    Y(2) = 0.3;
-    Y(3) = 0.4;
+    vec y = vec(4);
+    y = ("0.1 0.2 0.3 0.6");
 
+    testing.loadDesign("A.mat");
+    testing.setObservation(y);
     
-    
-    A = mat(4,2); // storing the regressor 1 an X for the four observations
-    vec beta = vec(2);
+    testing.regression.getDesign();
+    testing.regression.getObservation();
+    testing.regression.evaluate();
+    arma::vec beta = testing.regression.getBeta();
 
-    for (int i = 0; i < 4; i++){ 
-        A(i,0) = 1;
-        A(i,1) = i+1; 
-    }
+    beta.print("beta:");
     
-    beta = (A.t() * A).i() * A.t() * Y;    
 
-    cout << beta;   
-    
-    return 0;
+    return 0;   
 }
