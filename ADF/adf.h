@@ -14,7 +14,7 @@ class adf{
 public:
     adf(OPTIONS option);
     adf(OPTIONS option, arma::vec y);
-    adf(OPTIONS option, arma::mat design_adf, arma::vec y, int k);
+    adf(OPTIONS option, arma::vec y, int k);
     
     void getDesign_adf() const;
     void getObservation() const;
@@ -23,8 +23,8 @@ public:
     void setDesign(arma::mat design);
     void setObservation(arma::vec observation);
 
-    void evaluatePhi(OPTIONS option, int k);
-    void evaluateSE(OPTIONS option);
+    double evaluatePhi(int k, int iter);
+    void evaluateSE(int k);
  
     void loadDesign(const std::string& filename);
     void saveBetaCSV();

@@ -21,10 +21,10 @@ adf::adf(OPTIONS option, arma::vec y):
     k(0)
 { }
 
-adf::adf(OPTIONS, arma::mat design_adf, arma::vec y, int k):
+adf::adf(OPTIONS, arma::vec y, int k):
     option(option),
     y(y),
-    design_adf(design_adf),
+    design_adf(arma::mat()),
     beta(arma::vec()),
     regression(design_adf, y),
     k(k)
@@ -57,65 +57,74 @@ void adf::setObservation(arma::vec obs)
     regression.setObservation(obs);
 }
 
-void adf::evaluateSE(OPTIONS option)
-{ 
-    switch (option) 
-    { 
-        {case OPTIONS::DF:
-            ;
-        }                
-        {case OPTIONS::ADF:
-            ;
-        }
-    }            
-}
+void adf::evaluateSE(int k)
+{       
+    int iter;
+    int i = 0;
+    arma::vec store = arma::vec(y.n_elem-4);
+    for (iter = 4; iter< y.n_elem; ++iter){
+        store(iter-4) = evaluatePhi(k, iter);
+        i++; std::cout << i<< std::endl;                 
+    } //not yet finished
+    
+    phi = store(store.n_elem-1);  //access final element
+    std::cout << phi << std::endl;
 
-void adf::evaluatePhi(OPTIONS option, int k)
-{ 
-    std::cout << "evaluatePhi called"<< std::endl;
+    se_phi = stddev(store)/sqrt(y.n_elem);
+    std::cout << se_phi << std::endl;
+}                
 
-    arma::vec y_ = arma::vec(y.n_elem); //y_ is the y_{t-1} of y
+double adf::evaluatePhi(int k, int iter) 
+{ 
+    arma::vec x = y;
+    x.resize(iter); //need to implement
+
+    arma::vec y_ = arma::vec(x.n_elem); //y_ is the y_{t-1} of y
     
     y_(0) = 0;
     
-    for (int i = 1; i<y.n_elem; i++){
-        y_(i) = y(i-1);
+    for (int i = 1; i<x.n_elem; i++){
+        y_(i) = x(i-1);
     }
     
+    x.print("x:");
+    y_.print("y_:");
+
     switch (option) { 
         {case OPTIONS::DF:
-            arma::vec product = y%y_;       
-            product.print();
+            arma::vec product = x%y_;      
             
-            arma::vec denom = y%y;
+            arma::vec denom = x%x;
             phi = sum(product)/sum(denom);
             std::cout << phi << std::endl;
+            
+            return phi;
             break;
         }    
         
         {case OPTIONS::ADF:
-            arma::mat fix = arma::mat(y.n_elem, 3); //n*3 arma matrix
-            arma::mat lag = arma::mat(y.n_elem, k);; //n*k arma matrix, where k is the number of lag terms in consideration 
+            arma::mat fix = arma::mat(x.n_elem, 3); //n*3 arma matrix
+            arma::mat lag = arma::mat(x.n_elem, k);; //n*k arma matrix, where k is the number of lag terms in consideration 
             
-            for (int i = 0; i<y.n_elem; i++){
+            for (int i = 0; i<x.n_elem; i++){
                 fix(i,0) = 1;
                 fix(i,1) = y_(i);
                 fix(i,2) = i+1;
             } 
             fix.print("fix:");
 
-            //fix = [1,y_0,0; 1,y_1,1; ... ; 1,y_n-1,n]
-            arma::vec y_plusone = arma::vec(y.n_elem+1);
+           //fix = [1,y_0,0; 1,y_1,1; ... ; 1,y_n-1,n]
+            arma::vec y_plusone = arma::vec(x.n_elem+1);
 
             y_plusone(0) = 0;
             
-            for (int i = 0; i < y.n_elem; i++){
-                y_plusone(i+1) = y(i);
+            for (int i = 0; i < x.n_elem; i++){
+                y_plusone(i+1) = x(i);
             }
             
             y_plusone.print("y_plusone");
             
-            for (int i = 0; i < y.n_elem; i++){              //loop through y.n_elem # of rows
+            for (int i = 0; i < x.n_elem; i++){              //loop through y.n_elem # of rows
                 for(int count = 0; count <k; count++){     //loop through k # fo columns
                     if (i < count + 1)                           //if the time elapsed i is smaller than lagtime
                         lag(i,count) = 0;
@@ -134,11 +143,13 @@ void adf::evaluatePhi(OPTIONS option, int k)
             
 
             regression.setDesign(design_adf);
-            regression.setObservation(y);
+            regression.setObservation(x);
             
             regression.evaluate();
 
-            beta = regression.getBeta();            
+            beta = regression.getBeta();
+            
+            return beta(1);            
             break;
         }
     }            

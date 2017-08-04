@@ -9,16 +9,16 @@ using namespace arma;
 int main()
 {
     OPTIONS options;
-    adf testing = adf(OPTIONS::DF);
+    adf testing = adf(OPTIONS::ADF);
     
     arma_rng::set_seed_random();
 
-    vec y(10); y.randu();
+    vec y(100); y.randu();
 
     testing.setObservation(y);
      
-    testing.evaluatePhi(OPTIONS::ADF,5);    
-
+    testing.evaluateSE(5);    
+    
   
 
 

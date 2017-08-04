@@ -43,7 +43,8 @@ void ols::setObservation(arma::vec obs)
 
 void ols::evaluate()
 {
-    beta = ( design.t() * design ).i() * design.t() * observation; 
+    //beta = ( design.t() * design ).i() * design.t() * observation; 
+    solve(beta, design.t() * design, design.t() * observation);
 }
 
 //need to be optimized, currently running at low speed
