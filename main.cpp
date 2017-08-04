@@ -19,8 +19,8 @@ int main()
      
     testing.evaluateSE(5);    
     
-  
-
+    y.print("y:");
+    testing.getStatistics(); 
 
     return 0;   
 }

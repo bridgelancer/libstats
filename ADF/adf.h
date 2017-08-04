@@ -19,6 +19,7 @@ public:
     void getDesign_adf() const;
     void getObservation() const;
     void getBeta() const;
+    void getStatistics() const;
     
     void setDesign(arma::mat design);
     void setObservation(arma::vec observation);
@@ -35,7 +36,9 @@ private:
     arma::vec y; //The time-series data, notably the stock price
    
     double se_phi;
-   
+  
+    double statistics;
+ 
     OPTIONS option; 
     int k;
     //ols regression; //call the ols(arma::mat design_adf, arma::vec y) constructor   

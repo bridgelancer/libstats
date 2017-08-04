@@ -45,6 +45,11 @@ void adf::getBeta() const
     beta.print("beta:");
 }
 
+void adf::getStatistics() const
+{
+   std::cout << "The unit root t-test statistics is " << statistics << std::endl;
+}
+
 void adf::setDesign(arma::mat d)
 { 
     design_adf = d;
@@ -64,14 +69,16 @@ void adf::evaluateSE(int k)
     arma::vec store = arma::vec(y.n_elem-4);
     for (iter = 4; iter< y.n_elem; ++iter){
         store(iter-4) = evaluatePhi(k, iter);
-        i++; std::cout << i<< std::endl;                 
     } //not yet finished
     
     phi = store(store.n_elem-1);  //access final element
-    std::cout << phi << std::endl;
+    std::cout << "The calculated value of phi is " << phi << std::endl;
 
     se_phi = stddev(store)/sqrt(y.n_elem);
-    std::cout << se_phi << std::endl;
+    std::cout << "The standard error of phi is " << se_phi << std::endl;
+
+    statistics = phi/se_phi;
+ 
 }                
 
 double adf::evaluatePhi(int k, int iter) 
@@ -87,17 +94,13 @@ double adf::evaluatePhi(int k, int iter)
         y_(i) = x(i-1);
     }
     
-    x.print("x:");
-    y_.print("y_:");
-
     switch (option) { 
         {case OPTIONS::DF:
             arma::vec product = x%y_;      
             
             arma::vec denom = x%x;
             phi = sum(product)/sum(denom);
-            std::cout << phi << std::endl;
-            
+                      
             return phi;
             break;
         }    
@@ -111,8 +114,6 @@ double adf::evaluatePhi(int k, int iter)
                 fix(i,1) = y_(i);
                 fix(i,2) = i+1;
             } 
-            fix.print("fix:");
-
            //fix = [1,y_0,0; 1,y_1,1; ... ; 1,y_n-1,n]
             arma::vec y_plusone = arma::vec(x.n_elem+1);
 
@@ -121,9 +122,7 @@ double adf::evaluatePhi(int k, int iter)
             for (int i = 0; i < x.n_elem; i++){
                 y_plusone(i+1) = x(i);
             }
-            
-            y_plusone.print("y_plusone");
-            
+                      
             for (int i = 0; i < x.n_elem; i++){              //loop through y.n_elem # of rows
                 for(int count = 0; count <k; count++){     //loop through k # fo columns
                     if (i < count + 1)                           //if the time elapsed i is smaller than lagtime
@@ -132,12 +131,8 @@ double adf::evaluatePhi(int k, int iter)
                         lag(i,count) = y_plusone(i) - y_plusone(i-count-1);
                 } 
             }
-            
-            lag.print("lag:");
                 
-            lag.insert_cols(0, fix);
-
-            lag.print("lag:");            
+            lag.insert_cols(0, fix);           
 
             design_adf = lag;           
             
