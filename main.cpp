@@ -13,11 +13,11 @@ int main()
     
     arma_rng::set_seed_random();
 
-    vec y(100); y.randu();
+    vec y(1000); y.randu();
 
     testing.setObservation(y);
      
-    testing.evaluateSE(5);    
+    testing.evaluateSE(10);    
     
     y.print("y:");
     testing.getStatistics(); 

@@ -69,7 +69,7 @@ void adf::evaluateSE(int k)
     arma::vec store = arma::vec(y.n_elem-4);
     for (iter = 4; iter< y.n_elem; ++iter){
         store(iter-4) = evaluatePhi(k, iter);
-    } //not yet finished
+    } //not computing phi for the first 4 observations
     
     phi = store(store.n_elem-1);  //access final element
     std::cout << "The calculated value of phi is " << phi << std::endl;
@@ -136,9 +136,14 @@ double adf::evaluatePhi(int k, int iter)
 
             design_adf = lag;           
             
+            arma::vec x_diff = arma::vec(x.n_elem); 
+            for (int i = 0; i < x.n_elem; i++){
+                x_diff(i) = x(i) - y_(i);
+            }
+
 
             regression.setDesign(design_adf);
-            regression.setObservation(x);
+            regression.setObservation(x_diff);
             
             regression.evaluate();
 
