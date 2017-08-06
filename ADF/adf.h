@@ -24,10 +24,10 @@ public:
     void setDesign(arma::mat design);
     void setObservation(arma::vec observation);
 
-    double evaluatePhi(int k, int iter);
+    double evaluatePhi(int k);
     void evaluateSE(int k);
  
-    void loadDesign(const std::string& filename);
+    void loadCSV(const std::string& filename);
     void saveBetaCSV();
 
     double phi;

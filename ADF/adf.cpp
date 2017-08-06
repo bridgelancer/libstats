@@ -64,7 +64,7 @@ void adf::setObservation(arma::vec obs)
 
 void adf::evaluateSE(int k)
 {       
-    int iter;
+    /*int iter;
     int i = 0;
     arma::vec store = arma::vec(y.n_elem-4);
     for (iter = 4; iter< y.n_elem; ++iter){
@@ -73,27 +73,29 @@ void adf::evaluateSE(int k)
     
     phi = store(store.n_elem-1);  //access final element
     std::cout << "The calculated value of phi is " << phi << std::endl;
+    */
 
-    se_phi = stddev(store)/sqrt(y.n_elem);
-    std::cout << "The standard error of phi is " << se_phi << std::endl;
+    phi = evaluatePhi(k);
+    se_phi = regression.evaluateBetaSE();
 
     statistics = phi/se_phi;
- 
+
 }                
 
-double adf::evaluatePhi(int k, int iter) 
+double adf::evaluatePhi(int k) 
 { 
     arma::vec x = y;
-    x.resize(iter); //need to implement
 
-    arma::vec y_ = arma::vec(x.n_elem); //y_ is the y_{t-1} of y
+    arma::vec y_ = arma::vec(x.n_elem+1); //y_ is the y_{t-1} of y
     
     y_(0) = 0;
     
-    for (int i = 1; i<x.n_elem; i++){
+    for (int i = 1; i<x.n_elem+1; i++){
         y_(i) = x(i-1);
     }
     
+    
+
     switch (option) { 
         {case OPTIONS::DF:
             arma::vec product = x%y_;      
@@ -106,56 +108,54 @@ double adf::evaluatePhi(int k, int iter)
         }    
         
         {case OPTIONS::ADF:
-            arma::mat fix = arma::mat(x.n_elem, 3); //n*3 arma matrix
-            arma::mat lag = arma::mat(x.n_elem, k);; //n*k arma matrix, where k is the number of lag terms in consideration 
+            arma::mat fix = arma::mat(x.n_elem+1, 3); //n+1*3 arma matrix
+            arma::mat lag = arma::mat(x.n_elem+1, k);; //n+1*k arma matrix, where k is the number of lag terms in consideration 
             
-            for (int i = 0; i<x.n_elem; i++){
+            for (int i = 1; i<x.n_elem+1; i++){
                 fix(i,0) = 1;
-                fix(i,1) = y_(i);
-                fix(i,2) = i+1;
-            } 
-           //fix = [1,y_0,0; 1,y_1,1; ... ; 1,y_n-1,n]
-            arma::vec y_plusone = arma::vec(x.n_elem+1);
-
-            y_plusone(0) = 0;
-            
-            for (int i = 0; i < x.n_elem; i++){
-                y_plusone(i+1) = x(i);
+                fix(i,1) = y_(i-1);
+                fix(i,2) = i-1;
             }
+           
+           //fix = [1,y_0,0; 1,y_1,1; ... ; 1,y_n-1,n-1]
                       
-            for (int i = 0; i < x.n_elem; i++){              //loop through y.n_elem # of rows
-                for(int count = 0; count <k; count++){     //loop through k # fo columns
-                    if (i < count + 1)                           //if the time elapsed i is smaller than lagtime
+            for (int i = 0; i < x.n_elem + 1; i++){                //loop through x.n_elem+1 # of rows
+                for(int count = 0; count < k; count++){          //loop through k # fo columns
+                    if (i <= count + 1)                           //if the time elapsed i is smaller than lagtime
                         lag(i,count) = 0;
                     else
-                        lag(i,count) = y_plusone(i) - y_plusone(i-count-1);
+                        lag(i,count) = y_(i) - y_(i-count-1);
                 } 
             }
-                
+    
             lag.insert_cols(0, fix);           
-
+            lag.shed_rows(0,1); //yolo
+            
+            
             design_adf = lag;           
             
             arma::vec x_diff = arma::vec(x.n_elem); 
             for (int i = 0; i < x.n_elem; i++){
-                x_diff(i) = x(i) - y_(i);
+                x_diff(i) = y_(i+1) - y_(i);
             }
 
+            x_diff.shed_row(0); //yolo
 
             regression.setDesign(design_adf);
             regression.setObservation(x_diff);
-            
-            regression.evaluate();
+           
+             
+            regression.evaluate(); 
 
             beta = regression.getBeta();
-            
+ 
             return beta(1);            
             break;
         }
     }            
 }
 
-void adf::loadDesign(const std::string& filename)
+void adf::loadCSV(const std::string& filename)
 { 
     arma::mat A = arma::mat();
     bool status = A.load(filename);
@@ -170,8 +170,8 @@ void adf::loadDesign(const std::string& filename)
         std::cout << "problem with loading" << std::endl;
     }
     
-    design_adf = A;
-    regression.setDesign(A);
+    y = A;
+    regression.setObservation(y);
 }
 
 void adf::saveBetaCSV()

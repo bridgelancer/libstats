@@ -27,7 +27,6 @@ void ols::getObservation() const
 
 arma::vec ols::getBeta() const
 {
-    beta.print("beta:");
     return beta;
 }
 
@@ -45,6 +44,39 @@ void ols::evaluate()
 {
     //beta = ( design.t() * design ).i() * design.t() * observation; 
     solve(beta, design.t() * design, design.t() * observation);
+}
+
+double ols::evaluateBetaSE()
+{
+    arma::vec error = arma::vec(observation.n_elem);
+
+    error = observation - design * beta;
+
+    double SEestimate;
+    SEestimate = 1.0/(error.n_elem) * sum(square(error));
+     
+    double estimate;
+    arma::mat store = SEestimate * (design.t() * design).i();
+
+    estimate = sqrt(store(1,1)); //store is the covariance matrix that contains the SE values of all pair of estimators.
+    return estimate;
+ //assume independent and error term not skewed. the current calculated magnitude of staistics would be greater than intended.
+
+
+/*
+    double k;
+    arma::mat bStore;
+    
+    bStore = beta * beta.t();  
+    k = sum(square(error));
+    std::cout << beta(beta.n_elem-1) << std::endl; 
+    arma::mat tstore = (design.t() * design).i();
+    arma::mat store = tstore * k * bStore * tstore;
+
+    double estimate = sqrt(store(1,1));
+
+    return estimate;
+  */
 }
 
 //need to be optimized, currently running at low speed

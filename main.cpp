@@ -10,16 +10,14 @@ int main()
 {
     OPTIONS options;
     adf testing = adf(OPTIONS::ADF);
-    
-    arma_rng::set_seed_random();
+   
+    testing.loadCSV("gamble.mat");    
+   
+    testing.evaluateSE(6);     
 
-    vec y(1000); y.randu();
-
-    testing.setObservation(y);
+    arma::vec beta = testing.regression.getBeta();
+    beta.print("beta:");
      
-    testing.evaluateSE(10);    
-    
-    y.print("y:");
     testing.getStatistics(); 
 
     return 0;   
