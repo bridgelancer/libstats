@@ -124,14 +124,14 @@ double adf::evaluatePhi(int k)
                     if (i <= count + 1)                           //if the time elapsed i is smaller than lagtime
                         lag(i,count) = 0;
                     else
-                        lag(i,count) = y_(i-1) - y_(i-count-2);
+                        lag(i,count) = y_(i-count-1) - y_(i-count-2);
                 } 
             }
 
             //lag NOT STABLE FOR NOW
     
             lag.insert_cols(0, fix);           
-            lag.shed_rows(0,1); //yolo (change back to 0,1)            
+            lag.shed_rows(0,k+1); //yolo             
             
             design_adf = lag;           
            
@@ -142,7 +142,7 @@ double adf::evaluatePhi(int k)
                 x_diff(i) = y_(i+1) - y_(i);
             }
 
-            x_diff.shed_row(0); //yolo (change back to ..shed_row(0)
+            x_diff.shed_rows(0,k); //yolo 
 
             x_diff.print("x_diff:");
 
