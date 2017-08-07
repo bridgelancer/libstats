@@ -32,9 +32,8 @@ public:
 
     double phi;
     ols regression; //temporary public; for testing purposes only****
-private:      
     arma::vec y; //The time-series data, notably the stock price
-   
+private:
     double se_phi;
   
     double statistics;

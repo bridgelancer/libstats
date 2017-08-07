@@ -114,37 +114,41 @@ double adf::evaluatePhi(int k)
             for (int i = 1; i<x.n_elem+1; i++){
                 fix(i,0) = 1;
                 fix(i,1) = y_(i-1);
-                fix(i,2) = i-1;
+                fix(i,2) = i;
             }
            
-           //fix = [1,y_0,0; 1,y_1,1; ... ; 1,y_n-1,n-1]
+           //STABLE VERSION fix = [x,x,x; 1,y_0,1; ... ; 1,y_n-1,n-1]
                       
             for (int i = 0; i < x.n_elem + 1; i++){                //loop through x.n_elem+1 # of rows
                 for(int count = 0; count < k; count++){          //loop through k # fo columns
                     if (i <= count + 1)                           //if the time elapsed i is smaller than lagtime
                         lag(i,count) = 0;
                     else
-                        lag(i,count) = y_(i) - y_(i-count-1);
+                        lag(i,count) = y_(i-1) - y_(i-count-2);
                 } 
             }
+
+            //lag NOT STABLE FOR NOW
     
             lag.insert_cols(0, fix);           
-            lag.shed_rows(0,1); //yolo
-            
+            lag.shed_rows(0,1); //yolo (change back to 0,1)            
             
             design_adf = lag;           
-            
+           
+            design_adf.print("design_adf:");
+ 
             arma::vec x_diff = arma::vec(x.n_elem); 
             for (int i = 0; i < x.n_elem; i++){
                 x_diff(i) = y_(i+1) - y_(i);
             }
 
-            x_diff.shed_row(0); //yolo
+            x_diff.shed_row(0); //yolo (change back to ..shed_row(0)
+
+            x_diff.print("x_diff:");
 
             regression.setDesign(design_adf);
             regression.setObservation(x_diff);
            
-             
             regression.evaluate(); 
 
             beta = regression.getBeta();

@@ -53,7 +53,7 @@ double ols::evaluateBetaSE()
     error = observation - design * beta;
 
     double SEestimate;
-    SEestimate = 1.0/(error.n_elem) * sum(square(error));
+    SEestimate = 1.0/(error.n_elem - beta.n_elem) * sum(square(error));
      
     double estimate;
     arma::mat store = SEestimate * (design.t() * design).i();
