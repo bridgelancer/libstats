@@ -1,0 +1,8 @@
+cd URT2;
+echo "list of files:";
+ls;
+for filename in *;
+do echo "file: ${filename}";
+cp ${filename} -r ../URT;
+echo "file ${filename} moved to URT";
+done

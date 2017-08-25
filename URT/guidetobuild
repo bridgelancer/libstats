@@ -1,0 +1,12 @@
+In general, refer to the instructions https://github.com/olmallet81/URT
+
+In step 1,
+make USE_OPENMP=1 USE_ARMA=1, no need USE_MKL = 1
+
+In step 2,
+export LD_LIBRARY_PATH=/home/bridgelancer/libstats/URT/lib:$LD_LIBRARY_PATH
+
+In step 3,
+g++ -std=c++14 -O3 -march=native -DUSE_ARMA -o run -L./URT/lib ./URT/examples/example1.cpp -lURT -larmadillo -lblas -llapack
+
+**need to include armadillo, lblas, lapack yourself
