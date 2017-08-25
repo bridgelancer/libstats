@@ -12,13 +12,13 @@ int main()
     OPTIONS options;
     adf testing = adf(OPTIONS::ADF);
    
-    testing.loadCSV("gamble.mat");    
+    testing.loadCSV("desc.mat");    
 //    arma::vec y(10000);
 //    y.randu();
     
 //    testing.setObservation(y);
        
-    testing.evaluateSE(0);     
+    testing.evaluateSE(3);     
 
     arma::vec beta = testing.regression.getBeta();
     beta.print("beta:");
