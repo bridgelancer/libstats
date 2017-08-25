@@ -183,7 +183,7 @@ namespace sp
             void set_err_cov(const arma::mat& _P)         { P = _P;   }    // Set error covariance matrix.[NxN]
             void set_proc_noise(const arma::mat& _Q)      { Q = _Q;   }    // Set process noise cov. matrix.
             void set_meas_noise(const arma::mat& _R)      { R = _R;   }    // Set meas noise cov. matrix.
-            mvoid set_kalman_gain(const arma::mat& _K)     { K = _K;   }    // Set Kalman gain matrix.[NxM]
+            void set_kalman_gain(const arma::mat& _K)     { K = _K;   }    // Set Kalman gain matrix.[NxM]
             void set_trans_fcn(fcn_v _f)    // Set state transition functions
             {
                 f = _f;

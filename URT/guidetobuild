@@ -9,4 +9,4 @@ export LD_LIBRARY_PATH=/home/bridgelancer/libstats/URT/lib:$LD_LIBRARY_PATH
 In step 3,
 g++ -std=c++14 -O3 -march=native -DUSE_ARMA -o run -L./URT/lib ./URT/examples/example1.cpp -lURT -larmadillo -lblas -llapack
 
-**need to include armadillo, lblas, lapack yourself
+**need to link armadillo, lblas, lapack yourself
