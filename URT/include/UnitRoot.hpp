@@ -26,7 +26,7 @@ class UnitRoot
    int niter = 1000;                      // number of iterations, required when bootstrap is set to true
 
    bool bootstrap = false;                // compute critical values and p-value by bootstrap    
-   bool regression = false;               // output OLS regression results if set to true
+   bool regression = true;               // output OLS regression results if set to true
 
    // get test statistic
    const T& get_stat() const;

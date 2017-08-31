@@ -3,25 +3,20 @@
 //=================================================================================================
 
 #include "../include/URT.hpp"
+#include "../include/CsvManager.hpp"
 
 int main()
 {
-   int nobs = 1000;
 
-   // generating non-stationary random data
-   urt::Vector<double> data = urt::wiener_process<double>(nobs);
+   urt::Vector<double> data;
+   // Read from Training.csv
+   std::string filename = "Training.csv";
+   data.load(filename);
 
-   // initializing ADF test with 10 lags and constant trend
-   urt::ADF<double> test(data, 10, "ct");
-
+   for (int i = 0; i< 23; i++){
+     urt::ADF<double> test(data, i, "ct");
+     test.show();  
+   }
    // outputting test results
-   test.show();
-    
-   // switching to test with lag length optimization and p-value computation by bootstrap with 10000 iterations
-   test.method = "AIC";
-   test.bootstrap = true;
-   test.niter = 10000;
-    
-   // outputting test results
-   test.show();  
+   
 }

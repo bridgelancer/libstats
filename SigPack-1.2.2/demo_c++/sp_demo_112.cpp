@@ -38,7 +38,7 @@ int main()
     };
     kalman.set_trans_mat(A); //set A as the state transition matrix
 
-    arma::mat H =
+    arma::mat H = // only measure the positions
     {
         {1, 0, 0, 0, 0, 0 },
         {0, 1, 0, 0, 0, 0}
@@ -59,7 +59,7 @@ int main()
     kalman.set_meas_noise(R); //set measure noice matrix as R
 
         
-    //This section and the associated variables should be replace by real measurment data for each Nsamp.
+    //This *embraced section* and the associated variables should be replace by real measurment data for each Nsamp.
     //***********************************************************************************************************
     // Create simulation data
     arma::mat  z(M,Nsamp,arma::fill::zeros); // z of dimensions measurements * number of samples = 2 * 120
@@ -109,7 +109,6 @@ int main()
     gp0.plot_add( x_log.row(0), x_log.row(1),"Kalman");
     gp0.plot_add(xs_log.row(0),xs_log.row(1),"RTS smooth");
     gp0.plot_show();
-
 
     return 1;
 }
