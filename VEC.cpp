@@ -10,12 +10,18 @@ arma::mat GetLagMatrix(arma::mat xMat, int nlags)
 
     lag.zeros(nrows - nlags, ncols * nlags);
 
-    for (int j = 0; j < nrows; i++){
-        for (int i = 0; i < ncols; i++){
-            lag(j, i) = xMat(i + j + 1);
+    int counter = 1;
+    // dunno whether deletes the last nlags row
+
+    for (int i = 0; i < ncols * nlags; i++){
+        for (int j = 0; j < nrows - nlags; j++){
+            double laggedValue = xMat(j + counter, i);
+            lag(j, i) = laggedValue;
+            }
+            if ( (i+1) % ncols == 0)
+                counter++;
         }
     }
-
     return lag;
 }
 
@@ -26,13 +32,9 @@ arma::mat GetVECMPara(arma::mat regression)
 
     arma::mat VEC = arma::mat(nrows, ncols);
 
-    //tmp6 = VEC;
-
     for (int i = 0; i < ncols; i++){
-        for (int j = nrows -1 ; j < nrows; j--){
+        for (int j = nrows -1 ; j >= 0; j--){
                 double buffer;
-                buffer = -regression(j ,i);
-                    
                 if (j < ncols){
                     if (i == j){
                         buffer = 1 + regression(j, i);
@@ -40,14 +42,15 @@ arma::mat GetVECMPara(arma::mat regression)
                     else if (i != j){
                         buffer = regression(j, i);
                     }
-                    tmp6(j, i) = buffer - tmp6(j + ncols, i);
+                    VEC(j, i) = buffer - VEC(j + ncols, i);
                 }
+                buffer = -regression(j ,i);
                 else if (j < nrows - ncols){
-                    tmp6(j, i) = tmp6(j + ncols, i) + buffer;
+                    VEC(j, i) = VEC(j + ncols, i) + buffer;
                     printf("%f   ", tmp6(j , i));
                 }
                 else
-                    tmp6(j , i) = buffer; 
+                    VEC(j , i) = buffer; 
         }
     }
 }
@@ -87,7 +90,9 @@ int main()
     arma::mat lag;
 
     xMat = loadCSV("GLD-GDX.csv");
-    lag = GetLagMatrix(xMat);
+    lag = GetLagMatrix(xMat, 15);
+
+    xMat.shed_rows(45,59);
     regression = Regress(lag, xMat);
     parameters = GetVECMPara(regression);
 }
