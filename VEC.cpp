@@ -1,11 +1,32 @@
 #include <armadillo>
+#include <fstream>
+#include <iomanip>
+#include <cmath>
 
 using namespace arma;
 
 
 void saveMatCSV(arma::mat Mat, std::string filename)
 { 
-    Mat.save(filename, arma::csv_ascii);
+    std::ofstream stream = std::ofstream();
+    stream.open(filename, std::ofstream::out | std::ofstream::trunc);
+
+    int nrows = Mat.n_rows;
+    int ncols = Mat.n_cols;
+
+    stream << std::setprecision(4);
+    stream.setf( std::ios::fixed, std:: ios::floatfield ); 
+
+    for (int i = 0; i < nrows; i++){
+        for (int j = 0; j < ncols; j++){
+            double maxVal = max(arma::abs(Mat.col(j))); // finding the value of element in each column with largest magnitude
+            stream << std::setfill(' ') << std::setw((int)log10(maxVal) + (4 + 3)) << Mat(i, j); // setting width, extra 3 spaces are added for storing ., negative sign and log function rounds down;
+            if (j != ncols - 1)
+                stream << ", ";
+        }
+        stream << "\n";
+    }
+    stream.close();
 }
 
 void saveMatCSV(arma::cx_mat Mat, std::string filename)
@@ -15,10 +36,9 @@ void saveMatCSV(arma::cx_mat Mat, std::string filename)
 
 arma::mat regress(arma::mat X, arma::mat Y)
 {
-    // beta = ( design.t() * design ).i() * design.t() * observation; 
+    // beta = (X.t() * X).i() * X.t() * Y; 
     arma::mat beta;
-    // solve(beta, X.t() * X ,  X.t() * Y);
-    beta = (X.t() * X).i() * X.t() * Y;
+    solve(beta, X.t() * X ,  X.t() * Y);
 
     return beta;
 }
@@ -59,7 +79,7 @@ arma::mat getVARPara(arma::mat xMat, arma::mat lag, int nlags)
     return VARPara;
 }
 
-// The last one is wrong as well -> should be regression problem
+// The last row is wrong as well -> should be regression problem
 arma::mat getVECMPara(arma::mat VARPara)
 {
     int nrows = VARPara.n_rows;
@@ -98,6 +118,7 @@ arma::mat getVECMPara(arma::mat VARPara)
 arma::mat loadCSV(const std::string& filename)
 { 
     arma::mat A = arma::mat();
+
     bool status = A.load(filename);
 
     if(status == true)
@@ -169,7 +190,7 @@ arma::mat getResidualX(arma::mat xMat, arma::mat dLag, int nlags)
     saveMatCSV(coeff, "coeffX.csv");
 
     arma::mat residualX = xMat - dLag * coeff;
-    residualX.raw_print(std::cout , "resdwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwiualX:");
+    residualX.raw_print(std::cout , "residualX:");
     return (xMat - dLag * coeff);
 }
 
