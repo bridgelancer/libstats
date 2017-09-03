@@ -5,7 +5,8 @@
 
 using namespace arma;
 
-
+// by default, the ouput precision is up to 4 dp
+// if the precision is changed to nPrecision dp, pls change the term (4 + 3) to (nPrecision + 3) respectively;
 void saveMatCSV(arma::mat Mat, std::string filename)
 { 
     std::ofstream stream = std::ofstream();
@@ -15,12 +16,55 @@ void saveMatCSV(arma::mat Mat, std::string filename)
     int ncols = Mat.n_cols;
 
     stream << std::setprecision(4);
-    stream.setf( std::ios::fixed, std:: ios::floatfield ); 
+    stream.setf( std::ios::fixed, std:: ios::floatfield );
+    
+    arma::vec maxVal = arma::vec(ncols);
+    arma::vec minVal = arma::vec(ncols);
+    arma::vec status = arma::vec(ncols);
+
+    for (int j = 0; j < ncols; j++){
+        maxVal(j) = max(arma::abs(Mat.col(j))); // finding the value of element in each column with largest magnitude
+        minVal(j) = min(Mat.col(j)); // finding the smallest value
+
+        if (maxVal(j) != std::abs(minVal(j))){ // if the value of largest magnitude is not the one of smallest value (i.e. +100/ -0.1)
+
+            if ( maxVal(j) < 1 && std::abs(minVal(j)) < 1 && minVal(j) < 0.0)
+                status(j) = 0;
+            else if ( maxVal(j) < 1 && std::abs(minVal(j)) < 1 && minVal(j) > 0.0)
+                status(j) = 1;
+            else{
+                double tmpMaxVal = maxVal(j);
+                double tmpMinVal = std::abs(minVal(j));
+                if ( maxVal(j) < 1 )
+                     tmpMaxVal = maxVal(j) + 1;
+                if ( std::abs(minVal(j)) < 1 )
+                    tmpMinVal = std::abs(minVal(j)) + 1;
+
+                if( (int)(log10(tmpMaxVal)) - (int)(log10(tmpMinVal)) < 1.0 && minVal(j) < 0.0)
+                    status(j) = 0;
+                else
+                    status(j) = 1;
+            }
+        } 
+        else // the value of largest magnitude is the one of smallest value (i.e. +10/ -100)
+            status(j) = 0;
+    }
 
     for (int i = 0; i < nrows; i++){
         for (int j = 0; j < ncols; j++){
-            double maxVal = max(arma::abs(Mat.col(j))); // finding the value of element in each column with largest magnitude
-            stream << std::setfill(' ') << std::setw((int)log10(maxVal) + (4 + 3)) << Mat(i, j); // setting width, extra 3 spaces are added for storing ., negative sign and log function rounds down;
+            if (maxVal(j) > 1){
+                if ( status(j) == 0 )
+                    stream << std::setfill(' ') << std::setw( (int)log10(maxVal(j)) + (4 + 3) ) << Mat(i, j); // setting width, extra 3 spaces are added for storing ".", negative sign, and (int)log(x) rounds down;
+                else if ( status(j) == 1 )
+                    stream << std::setfill(' ') << std::setw( (int)log10(maxVal(j)) + (4 + 2) ) << Mat(i, j); // setting width, extra 2 spaces are added for storing ".", and (int)log(x) rounds down;
+            }
+            else {
+                if ( status(j) == 0 )
+                    stream << std::setfill(' ') << std::setw( (int)log10(1 + maxVal(j)) + (4 + 3) ) << Mat(i, j); // setting width, extra 3 spaces are added for storing ".", negative sign, and (int)log(x) rounds down;
+                else if ( status(j) == 1 )
+                    stream << std::setfill(' ') << std::setw( (int)log10(1 + maxVal(j)) + (4 + 2) ) << Mat(i, j); // setting width, extra 2 spaces are added for storing ".", and (int)log(x) rounds down;
+            }
+
             if (j != ncols - 1)
                 stream << ", ";
         }
@@ -286,8 +330,5 @@ int main()
     eigval = getEigenVal(eigenInput);
     saveMatCSV(eigval, "Eigenval.csv");
 
-    // getResidualDX/X
-    // getEigenInput
-    // Solve the Eigen matrix for eigenvalues/vectors
     // Perform the statistics test
 }
