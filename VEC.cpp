@@ -3,10 +3,15 @@
 #include <iomanip>
 #include <cmath>
 
+// @TODO change function signature to VEC::function();
 using namespace arma;
 
-// by default, the ouput precision is up to 4 dp
-// if the precision is changed to nPrecision dp, pls change the term (4 + 3) to (nPrecision + 3) respectively;
+// Do not commit until FGLS is fixed
+
+// by default, the output precision is up to 4 dp
+// if the precision is changed to nPrecision dp, pls change the term (4 + 3/2) to (nPrecision + 3/2) respectively;
+
+// can use raw_print instead?
 void saveMatCSV(arma::mat Mat, std::string filename)
 { 
     std::ofstream stream = std::ofstream();
@@ -78,7 +83,7 @@ void saveMatCSV(arma::cx_mat Mat, std::string filename)
     Mat.save(filename, arma::csv_ascii);
 }
 
-arma::mat regress(arma::mat X, arma::mat Y)
+arma::mat regressOLS(arma::mat X, arma::mat Y)
 {
     // beta = (X.t() * X).i() * X.t() * Y; 
     arma::mat beta;
@@ -86,6 +91,34 @@ arma::mat regress(arma::mat X, arma::mat Y)
 
     return beta;
 }
+
+arma::mat regressGLS(arma::mat X, arma::mat Y, arma::mat covariance)
+{
+    arma::mat beta;
+
+    arma::mat covarianceI;
+    solve(covarianceI, covariance, eye(size(covariance)));
+
+    solve(beta, X.t() * covarianceI * X, X.t() * covarianceI * Y);
+
+    return beta;
+}
+ 
+// @TODO
+arma::mat getCovarianceMatrix(arma::mat beta, arma::mat xMat, arma::mat lag)
+{
+    arma::mat error = arma::mat(xMat.n_rows, xMat.n_cols);
+    xMat.shed_rows(xMat.n_rows - lag.n_cols/xMat.n_cols, xMat.n_rows - 1);
+    
+    error = xMat - lag * beta;
+
+    arma::mat covariance;
+    covariance = 1.0/(double) (xMat.n_rows - lag.n_cols/xMat.n_cols) * error * error.t();
+    // (xMat - Z * beta) * (xMat.t() - beta.t() * Z.t())
+    return covariance;
+ // assume independent and error term not skewed. the current calculated magnitude of staistics would be greater than intended.
+}
+
 
 // xMat should have the latest data at front, the last nlags # of observations will be discarded
 arma::mat getLagMatrix(arma::mat xMat, int nlags)
@@ -101,9 +134,7 @@ arma::mat getLagMatrix(arma::mat xMat, int nlags)
 
     for (int i = 0; i < ncols * nlags; i++){
         for (int j = 0; j < nrows - nlags; j++){
-
             lag(j, i) = xMat(j + counter, counter2);
-
         }
             counter2++;
             if ( (i+1) % ncols == 0){
@@ -112,14 +143,28 @@ arma::mat getLagMatrix(arma::mat xMat, int nlags)
             }
     }
 
+    // new things - add two rows of 1 in front of the lag
+    arma::mat B = arma::ones<mat>(nrows - nlags, ncols);
+    lag = join_rows(B, lag);
+
+    
     return lag;
 }
 
-arma::mat getVARPara(arma::mat xMat, arma::mat lag, int nlags)
+arma::mat getBeta(arma::mat xMat, arma::mat lag, int nlags)
 {
-    xMat.shed_rows(xMat.n_rows - nlags, xMat.n_rows - 1);
+    // @TODO need to sort out the matrix multiplication error
+    xMat.shed_rows(xMat.n_rows - (lag.n_cols - 2)/xMat.n_cols, xMat.n_rows - 1);
     saveMatCSV(xMat, "xMatShed.csv");
-    arma::mat VARPara = regress(lag, xMat);
+    arma::mat beta = regressOLS(lag, xMat);
+    return beta;
+}
+
+arma::mat getVARPara(arma::mat xMat, arma::mat lag, arma::mat covariance)
+{
+    // @TODO need to sort out the matrix multiplication error
+    xMat.shed_rows(xMat.n_rows - (lag.n_cols - 2)/xMat.n_cols, xMat.n_rows - 1);
+    arma::mat VARPara = regressGLS(lag, xMat, covariance);
     return VARPara;
 }
 
@@ -135,6 +180,9 @@ arma::mat getVECMPara(arma::mat VARPara)
         for (int j = nrows -1 ; j >= 0; j--){
                 double buffer;
                 if (j < ncols){
+                    VEC(j, i) = VARPara(j, i);
+                }
+                else if (j < ncols* 2){
                     if (i == j){
                         buffer = 1 - VARPara(j, i);
                     }
@@ -152,9 +200,7 @@ arma::mat getVECMPara(arma::mat VARPara)
                     buffer = -VARPara(j ,i);
                     VEC(j, i) = buffer;
                 }
-                printf("%.4f   ", VEC(j, i));
         }
-        printf("\n\n\n");
     }
     return VEC;
 }
@@ -195,6 +241,23 @@ arma::mat getMatrixDiff(arma::mat xMat)
     return diff;
 }   
 
+arma::mat demean(arma::mat X)
+{ 
+    arma::mat mean = arma::mean(X, 0); // finding the average value for each col
+
+    // check validity
+    arma::mat demean;
+
+    demean = arma::mat(size(X));
+    for (int i = 0; i < X.n_cols; i++){
+        demean.col(i).fill(demean(i));
+    }
+
+    demean = X - demean; 
+
+    return demean;
+}
+
 
 // handle the shedding within function, not checked
 arma::mat getResidualDX(arma::mat xMat, arma::mat dLag, int nlags)
@@ -211,7 +274,7 @@ arma::mat getResidualDX(arma::mat xMat, arma::mat dLag, int nlags)
     std::cout << "dLag dimensions are " << dLag.n_rows << "   " << dLag.n_cols << std::endl;
     printf("\n");
 
-    coeff = regress(dLag, dxMat);
+    coeff = regressOLS(dLag, dxMat);
     saveMatCSV(coeff, "coeffDX.csv");
 
     return (dxMat - dLag * coeff);
@@ -230,11 +293,10 @@ arma::mat getResidualX(arma::mat xMat, arma::mat dLag, int nlags)
     
     saveMatCSV(xMat, "xMat.csv");
 
-    coeff = regress(dLag, xMat);
+    coeff = regressOLS(dLag, xMat);
     saveMatCSV(coeff, "coeffX.csv");
 
     arma::mat residualX = xMat - dLag * coeff;
-    residualX.raw_print(std::cout , "residualX:");
     return (xMat - dLag * coeff);
 }
 
@@ -245,9 +307,10 @@ arma::mat getEigenInput(arma::mat residualDX, arma::mat residualX)
     arma::mat S0k;
     arma::mat S00;
 
+    // @TODO refer to definition of Sk0/S0k
     Skk = 1.0/((double)residualX.n_rows) * residualX.t() * residualX;
-    Sk0 = 1.0/((double)residualDX.n_rows) * residualDX.t() * residualX;
-    S0k = 1.0/((double)residualX.n_rows) * residualX.t() * residualDX;
+    Sk0 = 1.0/((double)residualX.n_rows) * residualX.t() * residualDX;
+    S0k = 1.0/((double)residualDX.n_rows) * residualDX.t() * residualX;
     S00 = 1.0/((double)residualDX.n_rows) * residualDX.t() * residualDX;
 
     std::cout << "Skk dimensions are " << Skk.n_rows << "   " << Skk.n_cols << std::endl;
@@ -263,9 +326,12 @@ arma::mat getEigenInput(arma::mat residualDX, arma::mat residualX)
     arma::mat SkkInv = solve(Skk, eye<mat>(Skk.n_rows, Skk.n_rows));
     arma::mat S00Inv = solve(S00, eye<mat>(S00.n_rows, S00.n_rows));
     arma::mat eigenInput = Skk.i() * (Sk0 * S00.i() * S0k);
+
+    eigenInput.raw_print(std::cout, "eigenInput");
     return eigenInput;
 }
 
+// @TODO combine the getEigenOuput and getEigen Val 
 arma::cx_mat getEigenOutput(arma::mat eigenInput)
 {
     arma::cx_vec eigval;
@@ -287,6 +353,8 @@ arma::cx_vec getEigenVal(arma::mat eigenInput)
 int main()
 {
     arma::mat xMat;
+    arma::mat beta;
+    arma::mat covariance;
     arma::mat dxMat;
     arma::mat VARPara;
     arma::mat VECPara;
@@ -301,24 +369,36 @@ int main()
     xMat = loadCSV("GLD-GDX.csv");
     saveMatCSV(xMat, "xMat60.csv");
 
-    lag = getLagMatrix(xMat, 15);
+    lag = getLagMatrix(xMat, 17);
     saveMatCSV(lag, "Lag.csv");
     dLag = getMatrixDiff(lag);
     saveMatCSV(dLag, "dLag.csv");
 
-    saveMatCSV(lag, "Lag.csv");
+    beta = getBeta(xMat, lag, 17);
+    saveMatCSV(beta, "beta.csv");
 
-    VARPara = getVARPara(xMat, lag, 15);
+    /* now broken due to the ones
+    covariance = getCovarianceMatrix(beta, xMat, lag);
+    saveMatCSV(covariance, "covariance.csv");
+
+    arma::mat covarianceI;
+    solve(covarianceI, covariance, eye(size(covariance)));
+    saveMatCSV(covarianceI, "covarianceI.csv");
+
+    arma::mat I = covariance * covarianceI;
+    saveMatCSV(I, "I.csv");
+    */
+    VARPara = getVARPara(xMat, lag, eye(size(xMat.n_rows - (lag.n_cols - 2)/xMat.n_cols, xMat.n_rows - (lag.n_cols - 2)/xMat.n_cols)));
     saveMatCSV(VARPara, "VAR_Para.csv");
-
-    std::cout << "Testing \n";
     VECPara = getVECMPara(VARPara).t();
     saveMatCSV(VECPara, "VECM_Para.csv");
 
     // okay for now, working on below
 
-    residualX = getResidualX(xMat, dLag, 15);
-    residualDX = getResidualDX(xMat, dLag, 15);
+    /*
+
+    residualX = getResidualX(xMat, dLag, 17);
+    residualDX = getResidualDX(xMat, dLag, 17);
     saveMatCSV(residualX, "residualX.csv");
     saveMatCSV(residualDX, "residualDX.csv");
     eigenInput = getEigenInput(residualDX, residualX);
@@ -329,6 +409,7 @@ int main()
 
     eigval = getEigenVal(eigenInput);
     saveMatCSV(eigval, "Eigenval.csv");
+    */
 
     // Perform the statistics test
 }

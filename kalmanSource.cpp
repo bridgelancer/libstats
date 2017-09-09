@@ -97,17 +97,6 @@ int main()
 
     // RTS smoother
     kalman.rts_smooth(x_log,P_log,xs_log,Ps_log);
-
-    // Display result
-    gplot gp0;
-    gp0.window("Plot", 10, 10, 500, 500);
-    gp0.set_term("qt");
-    gp0.plot_add(    z0.row(0),    z0.row(1),"True Y","lines dashtype 2 linecolor \"black\"");
-    gp0.plot_add(     z.row(0),     z.row(1),"Meas Y","points");
-    gp0.plot_add( x_log.row(0), x_log.row(1),"Kalman");
-    gp0.plot_add(xs_log.row(0),xs_log.row(1),"RTS smooth");
-    gp0.plot_show();
-
-
+    
     return 1;
 }
