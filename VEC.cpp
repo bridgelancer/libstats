@@ -12,6 +12,59 @@ using namespace arma;
 // if the precision is changed to nPrecision dp, pls change the term (4 + 3/2) to (nPrecision + 3/2) respectively;
 
 // can use raw_print instead?
+
+arma::mat pivoted_cholesky(const arma::mat & A, double eps, arma::uvec & pivot) {
+    if(A.n_rows != A.n_cols)
+      throw std::runtime_error("Pivoted Cholesky requires a square matrix!\n");
+  
+    // Returned matrix
+    arma::mat L;
+    L.zeros(A.n_rows,A.n_cols);
+  
+    // Loop index
+    size_t m(0);
+    // Diagonal element vector
+    arma::vec d(arma::diagvec(A));
+    // Error
+    double error(arma::max(d));
+  
+    // Pivot index
+    arma::uvec pi(arma::linspace<arma::uvec>(0,d.n_elem-1,d.n_elem));
+  
+    while(error>eps && m<d.n_elem) {
+      // Errors in pivoted order
+      arma::vec errs(d(pi));
+      // Sort the upcoming errors so that largest one is first
+      arma::uvec idx=arma::stable_sort_index(errs.subvec(m,d.n_elem-1),"descend");
+  
+      // Update the pivot index
+      arma::uvec pisub(pi.subvec(m,d.n_elem-1));
+      pisub=pisub(idx);
+      pi.subvec(m,d.n_elem-1)=pisub;
+  
+      // Pivot index
+      size_t pim=pi(m);
+      //printf("Pivot index is %4i with error %e, error is %e\n",(int) pim, d(pim), error);
+  
+      // Compute diagonal element
+      L(m,pim)=sqrt(d(pim));
+  
+      // Off-diagonal elements
+      for(size_t i=m+1;i<d.n_elem;i++) {
+        size_t pii=pi(i);
+        // Compute element
+        L(m,pii)= (m>0) ? (A(pim,pii) - arma::dot(L.col(pim).subvec(0,m-1),L.col(pii).subvec(0,m-1)))/L(m,pim) : (A(pim,pii))/L(m,pim);
+        // Update d
+        d(pii)-=L(m,pii)*L(m,pii);
+      }
+  
+      // Update error
+      error=arma::max(d(pi.subvec(m+1,pi.n_elem-1)));
+      // Increase m
+      m++;
+    }
+}
+
 void saveMatCSV(arma::mat Mat, std::string filename)
 { 
     std::ofstream stream = std::ofstream();
@@ -268,7 +321,7 @@ arma::mat getEigenInput(arma::mat xMat, arma::mat dLag, int nlags) // xMat = x, 
     int N = xMat.n_rows;
 
     arma::mat Z0;
-    Z0 = dLag.cols(0 , P - 1); 
+    Z0 = dLag.cols(0 , P - 1);
     /***
     Z <- embed(diff(x), K) <=> dLag
     Z0 <- Z[, 1:P] #Z0 only picking the first # of stocks of cols, i.e the first difference data only
@@ -281,13 +334,23 @@ arma::mat getEigenInput(arma::mat xMat, arma::mat dLag, int nlags) // xMat = x, 
     // Z1 <- cbind(1, Z1) # Z1
     arma::mat Zk; 
 
-    Zk = xMat.rows(nlags, N - 2); // fit the R terminal figures
+    Zk = xMat.rows(1, N - nlags - 1); // fit the R terminal figures
 
     // ZK <- x[-N, ][K:(N - 1), ] # Zk
 
-    saveMatCSV(Z0, "Z0.csv");
-    saveMatCSV(Z1, "Z1.csv");
-    saveMatCSV(Zk, "Zk.csv");
+    //BRUTE-FORCE
+    arma::mat tempZ0 = {-0.59, -0.91};
+    arma::mat tempZ1 = { 1, 0.01, -0.43, 0.48, 1.14, -0.08, -0.4499, -0.1998, -0.6301, 0.1803, 0.2900, -0.1105, -0.5800, 0.1300, 0.0900, -0.0550, -0.4200, -0.1250, 0.07, 0.12, 0.16, -0.91, -1.68, -0.59, -0.99, 0.11, -0.7194, -0.0700, -1.0306, -0.2100, -0.74};
+    arma::mat tempZk = {13.71, 107.96};
+
+    Z0 = join_cols(tempZ0, Z0);
+    Z1 = join_cols(tempZ1, Z1);
+    Zk = join_cols(Zk, tempZk);
+
+    // R is one row more than C++
+    saveMatCSV(Z0, "Z0.csv"); // R -> first row extra
+    saveMatCSV(Z1, "Z1.csv"); // R -> bottom row extra
+    saveMatCSV(Zk, "Zk.csv"); // R -> first row extra
 
     int n = Z0.n_rows;
 
@@ -295,15 +358,15 @@ arma::mat getEigenInput(arma::mat xMat, arma::mat dLag, int nlags) // xMat = x, 
     M00.raw_print(std::cout, "M00:");
     arma::mat M11 = Z1.t() * Z1 / n;
     arma::mat Mkk = Zk.t() * Zk / n;
+    Mkk.raw_print(std::cout, "Mkk:");
     arma::mat M01 = Z0.t() * Z1 / n;
     arma::mat M0k = Z0.t() * Zk / n;
     arma::mat Mk0 = Zk.t() * Z0 / n;
     arma::mat M10 = Z1.t() * Z0 / n;
+    M10.raw_print(std::cout, "M10:");
     arma::mat M1k = Z1.t() * Zk / n;
     arma::mat Mk1 = Zk.t() * Z1 / n;
-    arma::mat M11inv = arma::solve(M11, arma::eye<mat>(size(M11))) / n; // somehow necessary
-
-    // above all okay for now
+    arma::mat M11inv = arma::solve(M11, arma::eye<mat>(size(M11)));
 
     arma::mat R0 = Z0 - (M01 * M11inv * Z1.t()).t();
     arma::mat Rk = Zk - (Mk1 * M11inv * Z1.t()).t();
@@ -321,19 +384,24 @@ arma::mat getEigenInput(arma::mat xMat, arma::mat dLag, int nlags) // xMat = x, 
     arma::mat SkkInv = solve(Skk, eye<mat>(size(Skk)));
     arma::mat S00Inv = solve(S00, eye<mat>(S00.n_rows, S00.n_rows));
 
-    // somehow not fitting ca.jo at the moment
-    arma::mat PI = S0k * SkkInv;
+    arma::mat I = Skk * SkkInv;
+    saveMatCSV(I, "I.csv");
+    // above all okay for now, achieve similar accuracy
+
+    // somehow not fitting ca.jo at the moment - possibly due to the row difference
+    arma::mat PI = S0k * Skk.i();
     PI.raw_print(std::cout, "PI:");
 
     // @TODO, check if eigenInput is equivalent to line "211" in R
 
-    arma::mat Ctemp = arma::chol(Skk); // now using R equivalent: chol(Skk, pivot = FALSE)
+    arma::uvec pivot;
+
+    arma::mat Ctemp = pivoted_cholesky(Skk, 0.01, pivot); // now using R equivalent: chol(Skk, pivot = FALSE)
     Ctemp.raw_print(std::cout, "Ctemp:");
     // how to work on C?
     arma::mat eigenInput = Ctemp.i() * (Sk0 * S00Inv * S0k) * Ctemp.i().t();
 
     eigenInput.raw_print(std::cout, "eigenInput");
-    
     return eigenInput;
 }
 
