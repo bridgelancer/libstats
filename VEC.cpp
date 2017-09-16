@@ -24,12 +24,13 @@ arma::mat pivoted_cholesky(const arma::mat & A, double eps, arma::uvec & pivot) 
     // Loop index
     size_t m(0);
     // Diagonal element vector
-    arma::vec d(arma::diagvec(A));
+    arma::vec d(arma::diagvec(A)); //d = {A(0,0), A(1,1)}; in column
     // Error
     double error(arma::max(d));
   
     // Pivot index
-    arma::uvec pi(arma::linspace<arma::uvec>(0,d.n_elem-1,d.n_elem));
+    arma::uvec pi(arma::linspace<arma::uvec>(0,d.n_elem-1,d.n_elem));  //d.n_elem = 2
+    //generat equal spaced uvec pi of 0, 1, ..., d.n_elem-1
   
     while(error>eps && m<d.n_elem) {
       // Errors in pivoted order
@@ -59,10 +60,26 @@ arma::mat pivoted_cholesky(const arma::mat & A, double eps, arma::uvec & pivot) 
       }
   
       // Update error
-      error=arma::max(d(pi.subvec(m+1,pi.n_elem-1)));
+      error=arma::max(d(pi.subvec(m,pi.n_elem-1))); //second update, subvec gg
+
+      //diagonal matrix's element(pi.subvec(m+1, pi.n_elem-1)))
+
       // Increase m
       m++;
     }
+    //printf("Final error is %e\n",error);
+
+    // Transpose to get Cholesky vectors as columns
+    arma::inplace_trans(L);
+  
+    // Drop unnecessary columns
+    if(m<L.n_cols)
+      L.shed_cols(m,L.n_cols-1);
+  
+    // Store pivot
+    pivot=pi.subvec(0,m-1);
+  
+    return L;
 }
 
 void saveMatCSV(arma::mat Mat, std::string filename)
@@ -396,10 +413,10 @@ arma::mat getEigenInput(arma::mat xMat, arma::mat dLag, int nlags) // xMat = x, 
 
     arma::uvec pivot;
 
-    arma::mat Ctemp = pivoted_cholesky(Skk, 0.01, pivot); // now using R equivalent: chol(Skk, pivot = FALSE)
-    Ctemp.raw_print(std::cout, "Ctemp:");
-    // how to work on C?
-    arma::mat eigenInput = Ctemp.i() * (Sk0 * S00Inv * S0k) * Ctemp.i().t();
+    arma::mat C = pivoted_cholesky(Skk, 0.01, pivot); // now using R equivalent: chol(Skk, pivot = FALSE)
+    saveMatCSV(C, "C.csv");
+    // how to work on C? -> pivoted_cholesky library?
+    arma::mat eigenInput = C.i() * (Sk0 * S00Inv * S0k) * C.i().t();
 
     eigenInput.raw_print(std::cout, "eigenInput");
     return eigenInput;
@@ -412,7 +429,7 @@ arma::cx_mat getEigenOutput(arma::mat eigenInput)
     arma::cx_mat eigvec;
 
     eig_gen(eigval, eigvec, eigenInput);
-    return eigvec;
+    return eigvec; // equivalent to e
 }
 
 arma::cx_vec getEigenVal(arma::mat eigenInput)
@@ -421,7 +438,14 @@ arma::cx_vec getEigenVal(arma::mat eigenInput)
     arma::cx_mat eigvec;
 
     eig_gen(eigval, eigvec, eigenInput);
-    return eigval;
+    return eigval; // equivalent to lambda
+}
+
+arma::mat getVorg(arma::mat C, arma::cx_mat eigvec)
+{
+    arma::mat real = arma::real(eigvec);
+    arma::mat Vorg = (C.i()).t() * real;
+    return Vorg;
 }
 
 int main()
@@ -439,6 +463,10 @@ int main()
     arma::mat eigenInput;
     arma::cx_mat eigvec;
     arma::cx_vec eigval;
+    arma::mat Vorg;
+    arma::mat V;
+    arma::mat C;
+    
 
     xMat = loadCSV("GLD-GDX.csv");
     saveMatCSV(xMat, "xMat60.csv");
@@ -473,11 +501,15 @@ int main()
     eigenInput = getEigenInput(xMat, dLag, 16);
     saveMatCSV(eigenInput, "Eigeninput.csv");
 
-    eigvec = getEigenOutput(eigenInput);
+    eigvec = getEigenOutput(eigenInput); // e
     saveMatCSV(eigvec, "Eigenvec.csv");
 
-    eigval = getEigenVal(eigenInput);
+    eigval = getEigenVal(eigenInput); // lambda
     saveMatCSV(eigval, "Eigenval.csv");
+
+    C = loadCSV("C.csv");
+    Vorg = getVorg(C, eigvec);
+    saveMatCSV(Vorg, "Vorg.csv");
 
     // Perform the statistics test
 }
