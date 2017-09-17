@@ -8,10 +8,6 @@ using namespace arma;
 
 // Do not commit until FGLS is fixed
 
-// by default, the output precision is up to 4 dp
-// if the precision is changed to nPrecision dp, pls change the term (4 + 3/2) to (nPrecision + 3/2) respectively;
-
-// can use raw_print instead?
 struct cVals
 {
     arma::mat eigen = { {6.5, 8.18, 11.65},
@@ -96,6 +92,10 @@ arma::mat pivoted_cholesky(const arma::mat & A, double eps, arma::uvec & pivot) 
     return L;
 }
 
+// by default, the output precision is up to 4 dp
+// if the precision is changed to nPrecision dp, pls change the term (4 + 3/2) to (nPrecision + 3/2) respectively;
+
+// can use raw_print instead?
 void saveMatCSV(arma::mat Mat, std::string filename)
 { 
     std::ofstream stream = std::ofstream();
@@ -330,6 +330,7 @@ arma::mat getMatrixDiff(arma::mat lag, arma::mat xMat)
     return diff;
 }   
 
+// not in use for the moment
 arma::mat demean(arma::mat X)
 { 
     arma::mat mean = arma::mean(X, 0); // finding the average value for each col
@@ -347,7 +348,6 @@ arma::mat demean(arma::mat X)
     return demean;
 }
 
-//@TODO -> fix BRUTE FORCE
 arma::mat getEigenInput(arma::mat xMat, arma::mat dLag, int nlags) // xMat = x, dLag = Z
 {
     dLag.shed_col(dLag.n_cols - 1);
@@ -518,7 +518,8 @@ int main()
     beta = getBeta(xMat, lag, 16);
     saveMatCSV(beta, "beta.csv");
 
-    /* now broken due to the ones
+    /***Possibly for FGLS to match MATLAB, not attempting for the moment
+
     covariance = getCovarianceMatrix(beta, xMat, lag);
     saveMatCSV(covariance, "covariance.csv");
 
@@ -528,13 +529,12 @@ int main()
 
     arma::mat I = covariance * covarianceI;
     saveMatCSV(I, "I.csv");
-    */
+    ******************************************************************/
 
     VARPara = getVARPara(xMat, lag, eye(size(xMat.n_rows - (lag.n_cols - 1)/xMat.n_cols, xMat.n_rows - (lag.n_cols - 1)/xMat.n_cols)));
     saveMatCSV(VARPara, "VAR_Para.csv"); 
     VECPara = getVECMPara(VARPara).t();
     saveMatCSV(VECPara, "VECM_Para.csv"); // R - GAMMA
-    // checking VAR/VEC Para
 
     eigenInput = getEigenInput(xMat, dLag, 16);
     saveMatCSV(eigenInput, "Eigeninput.csv");
@@ -549,8 +549,7 @@ int main()
     Vorg = getVorg(C, eigvec);
     saveMatCSV(Vorg, "Vorg.csv"); // to 3dp accuracy
 
-    // Perform the statistics test - probably imbue an array to check significance
-
+    // Perform the statistics test
     stats = getStatistics(eigval, dLag);
     saveMatCSV(stats, "stats.csv");
     
