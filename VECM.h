@@ -21,7 +21,6 @@ arma::mat regressGLS(arma::mat X, arma::mat Y, arma::mat covariance)
     return beta;
 }
 
-
 arma::mat pivoted_cholesky(const arma::mat & A, double eps, arma::uvec & pivot) 
 {
     if(A.n_rows != A.n_cols)
@@ -128,6 +127,7 @@ private:
 
 private:
     unsigned int        _lag;
+    arma::mat           _observation;
 
     arma::mat           _test_stat;
     arma::mat           _VARPara;
@@ -135,14 +135,10 @@ private:
     arma::mat           _Pi;
     
     arma::mat           _C;
+    arma::mat           _eigenInput;
     arma::cx_mat        _eigvec;
     arma::cx_vec        _eigval;
     arma::mat           _Vorg;
-
-
-    arma::mat           _eigenInput;
-
-    arma::mat           _observation;
 
     arma::mat           _covariance;
     arma::mat           _beta;

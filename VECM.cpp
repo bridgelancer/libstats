@@ -5,8 +5,6 @@
 
 #include "VECM.h"
 
-using namespace arma;
-
 // by default, the output precision is up to 4 dp
 // if the precision is changed to nPrecision dp, pls change the term (4 + 3/2) to (nPrecision + 3/2) respectively;
 
@@ -177,7 +175,7 @@ arma::mat VECM::getLagMatrix()
     }
 
     // add one rows of 1 behind _lag_matrix matrix
-    arma::mat B = arma::ones<mat>(nrows - _lag + 1, 1);
+    arma::mat B = arma::ones<arma::mat>(nrows - _lag + 1, 1);
     _lag_matrix = join_rows(_lag_matrix, B);
     
     return _lag_matrix;
@@ -197,7 +195,7 @@ arma::mat VECM::getVARPara()
     // @TODO need to sort out the matrix multiplication error
     _lag_matrix.shed_row(0);
     _observation.shed_rows(_observation.n_rows - (_lag_matrix.n_cols - 1)/_observation.n_cols, _observation.n_rows - 1);
-    arma::mat VARPara = regressGLS(_lag_matrix, _observation, eye(size(_observation.n_rows - (_lag_matrix.n_cols - 1)/_observation.n_cols, _observation.n_rows - (_lag_matrix.n_cols - 1)/_observation.n_cols)));
+    arma::mat VARPara = regressGLS(_lag_matrix, _observation, arma::eye(arma::size(_observation.n_rows - (_lag_matrix.n_cols - 1)/_observation.n_cols, _observation.n_rows - (_lag_matrix.n_cols - 1)/_observation.n_cols)));
     
     return VARPara;
 }
@@ -308,7 +306,7 @@ void VECM::getEigenInput() // _observation = x, _d_lag_matrix = Z
     Z0 <- Z[, 1:P] #Z0 only picking the first # of stocks of cols, i.e the first difference data only
     ***/
     arma::mat Z1 = _d_lag_matrix.cols(P, _d_lag_matrix.n_cols - 1);
-    arma::mat B = arma::ones<mat>(_Z1.n_rows, 1);
+    arma::mat B = arma::ones<arma::mat>(_Z1.n_rows, 1);
     Z1 = join_rows(B, _Z1);
     // Z1 <- Z[, -c(1:P)] shed the first P cols
     // Z1 <- cbind(1, Z1) # Z1
@@ -330,7 +328,7 @@ void VECM::getEigenInput() // _observation = x, _d_lag_matrix = Z
     arma::mat M10 = Z1.t() * Z0 / n;
     arma::mat M1k = Z1.t() * ZK / n;
     arma::mat Mk1 = ZK.t() * Z1 / n;
-    arma::mat M11inv = arma::solve(M11, arma::eye<mat>(size(M11)));
+    arma::mat M11inv = arma::solve(M11, arma::eye<arma::mat>(size(M11)));
 
     arma::mat R0 = Z0 - (M01 * M11inv * Z1.t()).t();
     arma::mat Rk = ZK - (Mk1 * M11inv * Z1.t()).t();
@@ -345,8 +343,8 @@ void VECM::getEigenInput() // _observation = x, _d_lag_matrix = Z
     S0k.raw_print(std::cout, "S0k:");
     S00.raw_print(std::cout, "S00:");
 
-    arma::mat SkkInv = solve(Skk, eye<mat>(size(Skk)));
-    arma::mat S00Inv = solve(S00, eye<mat>(S00.n_rows, S00.n_rows));
+    arma::mat SkkInv = solve(Skk, arma::eye<arma::mat>(size(Skk)));
+    arma::mat S00Inv = solve(S00, arma::eye<arma::mat>(S00.n_rows, S00.n_rows));
 
     _Pi= S0k * Skk.i();
 
@@ -377,7 +375,7 @@ arma::mat VECM::getStatistics()
     arma::mat stats;
     arma::mat eigen = arma::real(_eigval);
 
-    arma::mat one = arma::ones<mat>(size(eigen));
+    arma::mat one = arma::ones<arma::mat>(size(eigen));
     arma::mat n = arma::mat(size(eigen));
     n.fill(-N);
 
@@ -404,7 +402,16 @@ arma::mat VECM::getTest(arma::mat stats)
     return _test_stat;
 }
 arma::vec VECM::getEigenValues()
-{}
+{
+    return arma::real(_eigval);
+}
 
 arma::mat VECM::getEigenVecMatrix()
-{}
+{
+    return arma::real(_eigvec);
+}
+
+arma::mat VECM::getVECModel()
+{
+    return _Gamma;
+}
