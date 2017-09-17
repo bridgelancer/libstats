@@ -12,6 +12,20 @@ using namespace arma;
 // if the precision is changed to nPrecision dp, pls change the term (4 + 3/2) to (nPrecision + 3/2) respectively;
 
 // can use raw_print instead?
+struct cVals
+{
+    arma::mat eigen = { {6.5, 8.18, 11.65},
+                        {12.91, 14.90, 19.19},
+                        {18.9, 21.07, 25.75},
+                        {24.78, 27.14, 32.14},
+                        {30.84, 33.32, 38.78},
+                        {36.25, 39.43, 44.59},
+                        {42.06, 44.91, 51.30},
+                        {48.43, 51.07, 57.07},
+                        {54.01, 57.00, 63.37},
+                        {59.00, 62.42, 68.61},
+                        {65.07, 68.27, 74.36}, };
+};
 
 arma::mat pivoted_cholesky(const arma::mat & A, double eps, arma::uvec & pivot) {
     if(A.n_rows != A.n_cols)
@@ -355,14 +369,14 @@ arma::mat getEigenInput(arma::mat xMat, arma::mat dLag, int nlags) // xMat = x, 
     // Z1 <- Z[, -c(1:P)] shed the first P cols
     // Z1 <- cbind(1, Z1) # Z1
     arma::mat Zk; 
-
-    Zk = xMat.rows(1, N - nlags - 1); 
+    Zk = xMat.rows(1, N - nlags); 
     // ZK <- x[-N, ][K:(N - 1), ] # Zk
 
     // R is one row more than C++
     saveMatCSV(Z0, "Z0.csv"); // R -> first row extra
     saveMatCSV(Z1, "Z1.csv"); // R -> bottom row extra
     saveMatCSV(Zk, "Zk.csv"); // R -> first row extra
+    std::cout << "checking";
 
     int n = Z0.n_rows;
 
@@ -432,8 +446,43 @@ arma::cx_vec getEigenVal(arma::mat eigenInput)
 arma::mat getVorg(arma::mat C, arma::cx_mat eigvec)
 {
     arma::mat real = arma::real(eigvec);
-    arma::mat Vorg = (C.i()).t() * real;
+    arma::mat Vorg = (solve(C, eye(size(C)))).t() * real;
     return Vorg;
+}
+
+arma::mat getStatistics(arma::cx_vec eigval, arma::mat dLag){
+    double N = dLag.n_rows;
+
+    arma::mat stats;
+    arma::mat eigen = arma::real(eigval);
+
+    arma::mat one = arma::ones<mat>(size(eigen));
+    arma::mat n = arma::mat(size(eigen));
+    n.fill(-N);
+
+    stats = n % log(one - eigen); // already negative
+
+    return stats;
+}
+
+
+// refer to the structure of ca.jo@cvals, 1 = significant, 0 = insignficant
+arma::mat getTest(arma::mat stats, arma::mat xMat, cVals c)
+{
+    arma::mat cVal = c.eigen;
+    int K = xMat.n_cols;
+    
+    arma::mat test = arma::mat(K, 3);
+    for (int r = 0; r < K; r++){
+        for (int c = 0; c< 3; c++){
+            if (cVal(r,c) < stats(r))
+                test(r,c) = 1;
+            else
+                test(r,c) = 0;
+        }
+    }
+
+    return test;
 }
 
 int main()
@@ -454,6 +503,8 @@ int main()
     arma::mat Vorg;
     arma::mat V;
     arma::mat C;
+    arma::mat stats;
+    arma::mat test;
     
 
     xMat = loadCSV("GLD-GDX.csv");
@@ -479,11 +530,10 @@ int main()
     saveMatCSV(I, "I.csv");
     */
 
-    VARPara = getVARPara(xMat, lag, eye(size(xMat.n_rows - (lag.n_cols - 1)/xMat.n_cols - 1, xMat.n_rows - (lag.n_cols - 1)/xMat.n_cols) - 1));
+    VARPara = getVARPara(xMat, lag, eye(size(xMat.n_rows - (lag.n_cols - 1)/xMat.n_cols, xMat.n_rows - (lag.n_cols - 1)/xMat.n_cols)));
     saveMatCSV(VARPara, "VAR_Para.csv"); 
     VECPara = getVECMPara(VARPara).t();
     saveMatCSV(VECPara, "VECM_Para.csv"); // R - GAMMA
-
     // checking VAR/VEC Para
 
     eigenInput = getEigenInput(xMat, dLag, 16);
@@ -497,16 +547,14 @@ int main()
 
     C = loadCSV("C.csv");
     Vorg = getVorg(C, eigvec);
-    saveMatCSV(Vorg, "Vorg.csv");
+    saveMatCSV(Vorg, "Vorg.csv"); // to 3dp accuracy
 
-    // These are all good
-    
     // Perform the statistics test - probably imbue an array to check significance
 
-    /***
-    teststat <- as.matrix(rev(sapply(idx, function(x) -N * log(1 - lambda[x + 1]))))
-    cval <- round(cvals[1:arrsel, , 1], 2)
-    ***/
-
-
+    stats = getStatistics(eigval, dLag);
+    saveMatCSV(stats, "stats.csv");
+    
+    cVals c = cVals();
+    test = getTest(stats, xMat, c);
+    saveMatCSV(test, "results.csv");
 }
