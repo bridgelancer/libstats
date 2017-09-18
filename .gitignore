@@ -1,0 +1,7 @@
+vec
+vecm
+
+*.csv
+
+.ycm_*
+.vscode/
