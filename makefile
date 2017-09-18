@@ -17,7 +17,8 @@ vec:	VEC.cpp
 clean:
 	rm -f *.o
 
-
+vecm:	VECM.cpp
+	$(CXX) $^ -o $@ $(CXXFLAGS) $(LDFLAGS) -ggdb
 
 
 

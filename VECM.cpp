@@ -7,41 +7,63 @@
 
 // by default, the output precision is up to 4 dp
 // if the precision is changed to nPrecision dp, pls change the term (4 + 3/2) to (nPrecision + 3/2) respectively;
+VECM::VECM():
+    _observation(),
+    _lag(0),
+    _test_stat(),
+    _VARPara(),
+    _Gamma(),
+    _Pi(),
+    _C(),
+    _eigvec(),
+    _eigval(),
+    _Vorg(),
+    _eigenInput(),
+    _covariance(),
+    _beta(),
+    _lag_matrix(),
+    _d_lag_matrix(),
+    _Z0(),
+    _Z1(),
+    _ZK()
+{}
 
-// can use raw_print instead?
 VECM::VECM(arma::mat observation):
     _observation(observation),
     _lag(0),
-    _test_stat(arma::mat()),
-    _VARPara(arma::mat()),
-    _Gamma(arma::mat()),
-    _Pi(arma::mat()),
-    _C(arma::mat()),
-    _eigvec(arma::cx_mat()),
-    _eigval(arma::cx_vec()),
-    _Vorg(arma::mat()),
-    _eigenInput(arma::mat()),
-    _covariance(arma::mat()),
-    _beta(arma::mat()),
-    _lag_matrix(arma::mat()),
-    _d_lag_matrix(arma::mat()),
-    _Z0(arma::mat()),
-    _Z1(arma::mat()),
-    _ZK(arma::mat())
+    _test_stat(),
+    _VARPara(),
+    _Gamma(),
+    _Pi(),
+    _C(),
+    _eigvec(),
+    _eigval(),
+    _Vorg(),
+    _eigenInput(),
+    _covariance(),
+    _beta(),
+    _lag_matrix(),
+    _d_lag_matrix(),
+    _Z0(),
+    _Z1(),
+    _ZK()
 {}
 
-void VECM::doMaxEigenValueTest(int nlags)
+VECM::~VECM()
+{}
+
+void VECM::compute(int nlags)
 {
     arma::mat stats;
 
     _lag = nlags;
-    _lag_matrix = getLagMatrix();
+    _lag_matrix = computeLagMatrix();
     _d_lag_matrix = getMatrixDiff();
-    _beta = getBeta();
+    _beta = computeBeta();
 
     /***Possibly for FGLS to match MATLAB, not attempting for the moment
 
-    _covariance = getCovarianceMatrix(beta, _observation, _lag_matrix);
+    _covariance = computeCovarianceMatrix(beta, _observation, _lag_matrix);
     saveMatCSV(_covariance, "covariance.csv");
 
     arma::mat _covarianceI;
@@ -52,8 +74,8 @@ void VECM::doMaxEigenValueTest(int nlags)
     saveMatCSV(I, "I.csv");
     ******************************************************************/
 
-    _VARPara = getVARPara();
-    _Gamma = getGamma();
+    _VARPara = computeVARPara();
+    _Gamma = computeGamma();
 
     getEigenInput();
     getEigenOutput(); // e
@@ -65,7 +87,7 @@ void VECM::doMaxEigenValueTest(int nlags)
 }
 
 void VECM::saveMatCSV(arma::mat Mat, std::string filename)
-{ 
+{
     std::ofstream stream = std::ofstream();
     stream.open(filename, std::ofstream::out | std::ofstream::trunc);
 
@@ -74,7 +96,7 @@ void VECM::saveMatCSV(arma::mat Mat, std::string filename)
 
     stream << std::setprecision(4);
     stream.setf( std::ios::fixed, std:: ios::floatfield );
-    
+
     arma::vec maxVal = arma::vec(ncols);
     arma::vec minVal = arma::vec(ncols);
     arma::vec status = arma::vec(ncols);
@@ -102,7 +124,7 @@ void VECM::saveMatCSV(arma::mat Mat, std::string filename)
                 else
                     status(j) = 1;
             }
-        } 
+        }
         else // the value of largest magnitude is the one of smallest value (i.e. +10/ -100)
             status(j) = 0;
     }
@@ -131,16 +153,16 @@ void VECM::saveMatCSV(arma::mat Mat, std::string filename)
 }
 
 void VECM::saveMatCSV(arma::cx_mat Mat, std::string filename)
-{ 
+{
     Mat.save(filename, arma::csv_ascii);
 }
- 
+
 // @TODO - might not need this?
-arma::mat VECM::getCovarianceMatrix()
+arma::mat VECM::computeCovarianceMatrix()
 {
     arma::mat error = arma::mat(_observation.n_rows, _observation.n_cols);
-    _observation.shed_rows(_observation.n_rows - _lag_matrix.n_cols/_observation.n_cols, _observation.n_rows - 1);
-    
+    _observation.shed_rows(_observation.n_rows - _lag_matrix.n_cols/_observation.n_cols, _observation.n_rows - 0);
+
     error = _observation - _lag_matrix * _beta;
 
     arma::mat _covariance;
@@ -152,7 +174,7 @@ arma::mat VECM::getCovarianceMatrix()
 
 
 // _observation should have the latest data at front, the last _lag # of observations will be discarded
-arma::mat VECM::getLagMatrix()
+arma::mat VECM::computeLagMatrix()
 {
     int nrows = _observation.n_rows;
     int ncols = _observation.n_cols;
@@ -177,70 +199,106 @@ arma::mat VECM::getLagMatrix()
     // add one rows of 1 behind _lag_matrix matrix
     arma::mat B = arma::ones<arma::mat>(nrows - _lag + 1, 1);
     _lag_matrix = join_rows(_lag_matrix, B);
-    
+
     return _lag_matrix;
 }
 
-arma::mat VECM::getBeta()
+arma::mat VECM::computeBeta()
 {
     // @TODO need to sort out the matrix multiplication error
-    _lag_matrix.shed_row(0);
-    _observation.shed_rows(_observation.n_rows - (_lag_matrix.n_cols - 1)/_observation.n_cols, _observation.n_rows - 1);
-    arma::mat _beta = regressOLS(_lag_matrix, _observation);
+    auto lag_matrix = _lag_matrix;
+    auto observation = _observation;
+    lag_matrix.shed_row(0);
+    observation.shed_rows(observation.n_rows - (lag_matrix.n_cols - 1)/observation.n_cols, observation.n_rows - 1);
+    arma::mat _beta = regressOLS(lag_matrix, observation);
     return _beta;
 }
 
-arma::mat VECM::getVARPara()
+arma::mat VECM::computeVARPara()
 {
     // @TODO need to sort out the matrix multiplication error
-    _lag_matrix.shed_row(0);
-    _observation.shed_rows(_observation.n_rows - (_lag_matrix.n_cols - 1)/_observation.n_cols, _observation.n_rows - 1);
-    arma::mat VARPara = regressGLS(_lag_matrix, _observation, arma::eye(arma::size(_observation.n_rows - (_lag_matrix.n_cols - 1)/_observation.n_cols, _observation.n_rows - (_lag_matrix.n_cols - 1)/_observation.n_cols)));
-    
+    auto lag_matrix = _lag_matrix;
+    auto observation = _observation;
+    lag_matrix.shed_row(0);
+    observation.shed_rows(observation.n_rows - (lag_matrix.n_cols - 1)/observation.n_cols, observation.n_rows - 1);
+    arma::mat VARPara = regressGLS(lag_matrix, observation, arma::eye(arma::size(observation.n_rows, observation.n_rows)));
+
     return VARPara;
 }
 
 // extra two cols in front
-arma::mat VECM::getGamma()
+arma::mat VECM::computeGamma()
 {
     int nrows = _VARPara.n_rows;
     int ncols = _VARPara.n_cols;
 
     arma::mat VEC = arma::mat(nrows, ncols);
 
-    for (int c = 0; c < ncols; c++){
-        for (int r = nrows -1 ; r >= 0; r--){
+    saveMatCSV(VEC, "daughter.csv");
+
+    for (int i = 0; i < ncols; i++){
+        for (int j = nrows -1 ; j >= 0; j--){
             double buffer;
-            if (r < ncols){
-                VEC(r, c) = _VARPara(r, c);
+            if (j < ncols){
+                VEC(j, i) = _VARPara(j, i);
             }
-            else if (r < ncols* 2){
-                if (r == c){
-                    buffer = 1 - _VARPara(r, c);
+            else if (j < ncols* 2){
+                if (i == j){
+                    buffer = 1 - _VARPara(j, i);
                 }
 
-                else if (r != c){
-                    buffer = -_VARPara(r, c);
+                else if (i != j){
+                    buffer = -_VARPara(j, i);
                 }
-                VEC(r, c) = (buffer + VEC(r + ncols, c));
+                VEC(j, i) = (buffer + VEC(j + ncols, i));
             }
-            else if (r < nrows - ncols - 1){
-                buffer = -_VARPara(r ,c);
-                VEC(r, c) = VEC(r + ncols, c) + buffer;
+            else if (j < nrows - ncols - 1){
+                buffer = -_VARPara(j ,i);
+                VEC(j, i) = VEC(j + ncols, i) + buffer;
             }
             else{
-                buffer = -_VARPara(r ,c);
-                VEC(r, c) = buffer;
+                buffer = -_VARPara(j ,i);
+                VEC(j, i) = buffer;
             }
         }
     }
+
+    //for (int c = 0; c < ncols; c++){
+        //for (int r = nrows -1 ; r >= 0; r--){
+            //double buffer;
+            //if (r < ncols){
+                //VEC(r, c) = _VARPara(r, c);
+            //}
+            //else if (r < ncols* 2){
+                //if (r == c){
+                    //buffer = 1 - _VARPara(r, c);
+                //}
+//
+                //else if (r != c){
+                    //buffer = -_VARPara(r, c);
+                //}
+                //VEC(r, c) = (buffer + VEC(r + ncols, c));
+            //}
+            //else if (r < nrows - ncols - 1){
+                //buffer = -_VARPara(r ,c);
+                //VEC(r, c) = VEC(r + ncols, c) + buffer;
+            //}
+            //else{
+                //buffer = -_VARPara(r ,c);
+                //VEC(r, c) = buffer;
+            //}
+        //}
+    //}
+
+    saveMatCSV(_VARPara, "damn.csv");
+    saveMatCSV(VEC, "son.csv");
 
     VEC.shed_rows(0, _VARPara.n_cols-1);
     return VEC;
 }
 
 arma::mat VECM::loadCSV(const std::string& filename)
-{ 
+{
     arma::mat A = arma::mat();
 
     bool status = A.load(filename);
@@ -254,7 +312,11 @@ arma::mat VECM::loadCSV(const std::string& filename)
     {
         std::cout << "Problem with loading" << std::endl;
     }
-    
+
+    _observation = A;
+
+    saveMatCSV(_observation, "fuck.csv");
+
     return A;
 }
 
@@ -273,11 +335,11 @@ arma::mat VECM::getMatrixDiff()
     }
 
     return diff;
-}   
+}
 
 // not in use for the moment
 arma::mat VECM::demean(arma::mat X)
-{ 
+{
     arma::mat mean = arma::mean(X, 0); // finding the average value for each col
 
     // check validity
@@ -288,7 +350,7 @@ arma::mat VECM::demean(arma::mat X)
         demean.col(i).fill(demean(i));
     }
 
-    demean = X - demean; 
+    demean = X - demean;
 
     return demean;
 }
@@ -310,7 +372,7 @@ void VECM::getEigenInput() // _observation = x, _d_lag_matrix = Z
     Z1 = join_rows(B, _Z1);
     // Z1 <- Z[, -c(1:P)] shed the first P cols
     // Z1 <- cbind(1, Z1) # Z1
-    arma::mat ZK = _observation.rows(1, N - _lag); 
+    arma::mat ZK = _observation.rows(1, N - _lag);
     // ZK <- x[-N, ][K:(N - 1), ] # Zk
 
     _Z0 = Z0;
@@ -356,7 +418,7 @@ void VECM::getEigenInput() // _observation = x, _d_lag_matrix = Z
     _eigenInput.raw_print(std::cout, "eigenInput");
 }
 
-// @TODO combine the getEigenOuput and getEigen Val 
+// @TODO combine the getEigenOuput and getEigen Val
 void VECM::getEigenOutput()
 {
     eig_gen(_eigval, _eigvec, _eigenInput);
@@ -389,7 +451,7 @@ arma::mat VECM::getStatistics()
 arma::mat VECM::getTest(arma::mat stats)
 {
     int K = _observation.n_cols;
-    
+
     arma::mat _test_stat = arma::mat(K, 3);
     for (int r = 0; r < K; r++){
         for (int c = 0; c < 3; c++){
@@ -414,4 +476,11 @@ arma::mat VECM::getEigenVecMatrix()
 arma::mat VECM::getVECModel()
 {
     return _Gamma;
+}
+
+int main()
+{
+    VECM vecm;
+    vecm.loadCSV("GLD-GDX.csv");
+    vecm.compute(16);
 }

@@ -2,7 +2,7 @@
 
 arma::mat regressOLS(arma::mat X, arma::mat Y)
 {
-    // beta = (X.t() * X).i() * X.t() * Y; 
+    // beta = (X.t() * X).i() * X.t() * Y;
     arma::mat beta;
     solve(beta, X.t() * X ,  X.t() * Y);
 
@@ -21,44 +21,44 @@ arma::mat regressGLS(arma::mat X, arma::mat Y, arma::mat covariance)
     return beta;
 }
 
-arma::mat pivoted_cholesky(const arma::mat & A, double eps, arma::uvec & pivot) 
+arma::mat pivoted_cholesky(const arma::mat & A, double eps, arma::uvec & pivot)
 {
     if(A.n_rows != A.n_cols)
       throw std::runtime_error("Pivoted Cholesky requires a square matrix!\n");
-  
+
     // Returned matrix
     arma::mat L;
     L.zeros(A.n_rows,A.n_cols);
-  
+
     // Loop index
     size_t m(0);
     // Diagonal element vector
     arma::vec d(arma::diagvec(A)); //d = {A(0,0), A(1,1)}; in column
     // Error
     double error(arma::max(d));
-  
+
     // Pivot index
     arma::uvec pi(arma::linspace<arma::uvec>(0,d.n_elem-1,d.n_elem));  //d.n_elem = 2
     //generat equal spaced uvec pi of 0, 1, ..., d.n_elem-1
-  
+
     while(error>eps && m<d.n_elem) {
       // Errors in pivoted order
       arma::vec errs(d(pi));
       // Sort the upcoming errors so that largest one is first
       arma::uvec idx=arma::stable_sort_index(errs.subvec(m,d.n_elem-1),"descend");
-  
+
       // Update the pivot index
       arma::uvec pisub(pi.subvec(m,d.n_elem-1));
       pisub=pisub(idx);
       pi.subvec(m,d.n_elem-1)=pisub;
-  
+
       // Pivot index
       size_t pim=pi(m);
       //printf("Pivot index is %4i with error %e, error is %e\n",(int) pim, d(pim), error);
-  
+
       // Compute diagonal element
       L(m,pim)=sqrt(d(pim));
-  
+
       // Off-diagonal elements
       for(size_t i=m+1;i<d.n_elem;i++) {
         size_t pii=pi(i);
@@ -67,7 +67,7 @@ arma::mat pivoted_cholesky(const arma::mat & A, double eps, arma::uvec & pivot)
         // Update d
         d(pii)-=L(m,pii)*L(m,pii);
       }
-  
+
       // Update error
       error=arma::max(d(pi.subvec(m,pi.n_elem-1))); //second update, subvec gg
 
@@ -80,25 +80,26 @@ arma::mat pivoted_cholesky(const arma::mat & A, double eps, arma::uvec & pivot)
 
     // Transpose to get Cholesky vectors as columns
     arma::inplace_trans(L);
-  
+
     // Drop unnecessary columns
     if(m<L.n_cols)
       L.shed_cols(m,L.n_cols-1);
-  
+
     // Store pivot
     pivot=pi.subvec(0,m-1);
-  
+
     return L;
 }
 
-class VECM
-{
+class VECM {
 public:
+    VECM();
     VECM(arma::mat observation);
     ~VECM();
 
-    void doMaxEigenValueTest(int nlags);
-    
+    arma::mat loadCSV(const std::string& filename);
+    void compute(int nlags);
+
     arma::mat getTest(arma::mat stats);
     arma::vec getEigenValues();
     arma::mat getEigenVecMatrix();
@@ -109,13 +110,14 @@ private:
     void saveMatCSV(arma::mat Mat, std::string filename);
     void saveMatCSV(arma::cx_mat Mat, std::string filename);
 
-    arma::mat getCovarianceMatrix();
-    arma::mat getLagMatrix();
-    arma::mat getBeta();
+    //void preprocess();
 
-    arma::mat getVARPara();
-    arma::mat getGamma();
-    arma::mat loadCSV(const std::string& filename);
+    arma::mat computeCovarianceMatrix();
+    arma::mat computeLagMatrix();
+    arma::mat computeBeta();
+
+    arma::mat computeVARPara();
+    arma::mat computeGamma();
     arma::mat getMatrixDiff();
     arma::mat demean(arma::mat X);
 
@@ -133,7 +135,7 @@ private:
     arma::mat           _VARPara;
     arma::mat           _Gamma;
     arma::mat           _Pi;
-    
+
     arma::mat           _C;
     arma::mat           _eigenInput;
     arma::cx_mat        _eigvec;
