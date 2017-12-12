@@ -26,40 +26,40 @@ struct cVals
 arma::mat pivoted_cholesky(const arma::mat & A, double eps, arma::uvec & pivot) {
     if(A.n_rows != A.n_cols)
       throw std::runtime_error("Pivoted Cholesky requires a square matrix!\n");
-
+  
     // Returned matrix
     arma::mat L;
     L.zeros(A.n_rows,A.n_cols);
-
+  
     // Loop index
     size_t m(0);
     // Diagonal element vector
     arma::vec d(arma::diagvec(A)); //d = {A(0,0), A(1,1)}; in column
     // Error
     double error(arma::max(d));
-
+  
     // Pivot index
     arma::uvec pi(arma::linspace<arma::uvec>(0,d.n_elem-1,d.n_elem));  //d.n_elem = 2
     //generat equal spaced uvec pi of 0, 1, ..., d.n_elem-1
-
+  
     while(error>eps && m<d.n_elem) {
       // Errors in pivoted order
       arma::vec errs(d(pi));
       // Sort the upcoming errors so that largest one is first
       arma::uvec idx=arma::stable_sort_index(errs.subvec(m,d.n_elem-1),"descend");
-
+  
       // Update the pivot index
       arma::uvec pisub(pi.subvec(m,d.n_elem-1));
       pisub=pisub(idx);
       pi.subvec(m,d.n_elem-1)=pisub;
-
+  
       // Pivot index
       size_t pim=pi(m);
       //printf("Pivot index is %4i with error %e, error is %e\n",(int) pim, d(pim), error);
-
+  
       // Compute diagonal element
       L(m,pim)=sqrt(d(pim));
-
+  
       // Off-diagonal elements
       for(size_t i=m+1;i<d.n_elem;i++) {
         size_t pii=pi(i);
@@ -68,7 +68,7 @@ arma::mat pivoted_cholesky(const arma::mat & A, double eps, arma::uvec & pivot) 
         // Update d
         d(pii)-=L(m,pii)*L(m,pii);
       }
-
+  
       // Update error
       error=arma::max(d(pi.subvec(m,pi.n_elem-1))); //second update, subvec gg
 
@@ -81,14 +81,14 @@ arma::mat pivoted_cholesky(const arma::mat & A, double eps, arma::uvec & pivot) 
 
     // Transpose to get Cholesky vectors as columns
     arma::inplace_trans(L);
-
+  
     // Drop unnecessary columns
     if(m<L.n_cols)
       L.shed_cols(m,L.n_cols-1);
-
+  
     // Store pivot
     pivot=pi.subvec(0,m-1);
-
+  
     return L;
 }
 
@@ -97,7 +97,7 @@ arma::mat pivoted_cholesky(const arma::mat & A, double eps, arma::uvec & pivot) 
 
 // can use raw_print instead?
 void saveMatCSV(arma::mat Mat, std::string filename)
-{
+{ 
     std::ofstream stream = std::ofstream();
     stream.open(filename, std::ofstream::out | std::ofstream::trunc);
 
@@ -106,7 +106,7 @@ void saveMatCSV(arma::mat Mat, std::string filename)
 
     stream << std::setprecision(4);
     stream.setf( std::ios::fixed, std:: ios::floatfield );
-
+    
     arma::vec maxVal = arma::vec(ncols);
     arma::vec minVal = arma::vec(ncols);
     arma::vec status = arma::vec(ncols);
@@ -134,7 +134,7 @@ void saveMatCSV(arma::mat Mat, std::string filename)
                 else
                     status(j) = 1;
             }
-        }
+        } 
         else // the value of largest magnitude is the one of smallest value (i.e. +10/ -100)
             status(j) = 0;
     }
@@ -163,13 +163,13 @@ void saveMatCSV(arma::mat Mat, std::string filename)
 }
 
 void saveMatCSV(arma::cx_mat Mat, std::string filename)
-{
+{ 
     Mat.save(filename, arma::csv_ascii);
 }
 
-arma::mat regressOLS(const arma::mat& X, arma::mat Y)
+arma::mat regressOLS(arma::mat X, arma::mat Y)
 {
-    // beta = (X.t() * X).i() * X.t() * Y;
+    // beta = (X.t() * X).i() * X.t() * Y; 
     arma::mat beta;
     solve(beta, X.t() * X ,  X.t() * Y);
 
@@ -177,24 +177,24 @@ arma::mat regressOLS(const arma::mat& X, arma::mat Y)
 }
 
 // @TODO - depends on getCovarianceMatrix
-arma::mat regressGLS(arma::mat& X, arma::mat Y, arma::mat covariance)
+arma::mat regressGLS(arma::mat X, arma::mat Y, arma::mat covariance)
 {
     arma::mat beta;
 
     arma::mat covarianceI;
-    solve(covarianceI, covariance, eye(size(covariance)));
+    solve(covarianceI, covariance, eye(size(covariance))); // solving for inverse of covariance
 
     solve(beta, X.t() * covarianceI * X, X.t() * covarianceI * Y);
 
     return beta;
 }
-
+ 
 // @TODO - might not need this?
 arma::mat getCovarianceMatrix(arma::mat beta, arma::mat xMat, arma::mat lag)
 {
     arma::mat error = arma::mat(xMat.n_rows, xMat.n_cols);
     xMat.shed_rows(xMat.n_rows - lag.n_cols/xMat.n_cols, xMat.n_rows - 1);
-
+    
     error = xMat - lag * beta;
 
     arma::mat covariance;
@@ -231,7 +231,7 @@ arma::mat getLagMatrix(arma::mat xMat, int nlags)
     // add one rows of 1 behind lag matrix
     arma::mat B = arma::ones<mat>(nrows - nlags + 1, 1);
     lag = join_rows(lag, B);
-
+    
     return lag;
 }
 
@@ -250,8 +250,8 @@ arma::mat getVARPara(arma::mat xMat, arma::mat lag, arma::mat covariance)
     // @TODO need to sort out the matrix multiplication error
     lag.shed_row(0);
     xMat.shed_rows(xMat.n_rows - (lag.n_cols - 1)/xMat.n_cols, xMat.n_rows - 1);
-    arma::mat VARPara = regressGLS(lag, xMat, covariance);
-
+    arma::mat VARPara = regressGLS(lag, xMat, covariance); //regressGLS currently not working
+    
     return VARPara;
 }
 
@@ -273,7 +273,6 @@ arma::mat getVECMPara(arma::mat VARPara)
                 if (i == j){
                     buffer = 1 - VARPara(j, i);
                 }
-
                 else if (i != j){
                     buffer = -VARPara(j, i);
                 }
@@ -295,7 +294,7 @@ arma::mat getVECMPara(arma::mat VARPara)
 }
 
 arma::mat loadCSV(const std::string& filename)
-{
+{ 
     arma::mat A = arma::mat();
 
     bool status = A.load(filename);
@@ -309,7 +308,7 @@ arma::mat loadCSV(const std::string& filename)
     {
         std::cout << "Problem with loading" << std::endl;
     }
-
+    
     return A;
 }
 
@@ -323,16 +322,16 @@ arma::mat getMatrixDiff(arma::mat lag, arma::mat xMat)
 
     for (int i = 0; i < nrows - 1; i++){
         for (int j = 0; j < ncols; j++){
-                diff(i , j) = lag(i+1 , j) - lag(i , j);
+            diff(i , j) = lag(i+1 , j) - lag(i , j);
         }
     }
 
     return diff;
-}
+}   
 
 // not in use for the moment
 arma::mat demean(arma::mat X)
-{
+{ 
     arma::mat mean = arma::mean(X, 0); // finding the average value for each col
 
     // check validity
@@ -343,7 +342,7 @@ arma::mat demean(arma::mat X)
         demean.col(i).fill(demean(i));
     }
 
-    demean = X - demean;
+    demean = X - demean; 
 
     return demean;
 }
@@ -361,15 +360,15 @@ arma::mat getEigenInput(arma::mat xMat, arma::mat dLag, int nlags) // xMat = x, 
     Z <- embed(diff(x), K) <=> dLag
     Z0 <- Z[, 1:P] #Z0 only picking the first # of stocks of cols, i.e the first difference data only
     ***/
-    arma::mat Z1;
+    arma::mat Z1; 
     Z1 = dLag.cols(P, dLag.n_cols - 1);
     arma::mat B = arma::ones<mat>(Z1.n_rows, 1);
 
     Z1 = join_rows(B, Z1);
     // Z1 <- Z[, -c(1:P)] shed the first P cols
     // Z1 <- cbind(1, Z1) # Z1
-    arma::mat Zk;
-    Zk = xMat.rows(1, N - nlags);
+    arma::mat Zk; 
+    Zk = xMat.rows(1, N - nlags); 
     // ZK <- x[-N, ][K:(N - 1), ] # Zk
 
     // R is one row more than C++
@@ -409,7 +408,7 @@ arma::mat getEigenInput(arma::mat xMat, arma::mat dLag, int nlags) // xMat = x, 
 
     arma::mat I = Skk * SkkInv;
     saveMatCSV(I, "I.csv");
-
+   
     arma::mat PI = S0k * Skk.i();
     PI.raw_print(std::cout, "PI:");
 
@@ -424,7 +423,7 @@ arma::mat getEigenInput(arma::mat xMat, arma::mat dLag, int nlags) // xMat = x, 
     return eigenInput;
 }
 
-// @TODO combine the getEigenOuput and getEigen Val
+// @TODO combine the getEigenOuput and getEigen Val 
 arma::cx_mat getEigenOutput(arma::mat eigenInput)
 {
     arma::cx_vec eigval;
@@ -471,7 +470,7 @@ arma::mat getTest(arma::mat stats, arma::mat xMat, cVals c)
 {
     arma::mat cVal = c.eigen;
     int K = xMat.n_cols;
-
+    
     arma::mat test = arma::mat(K, 3);
     for (int r = 0; r < K; r++){
         for (int c = 0; c< 3; c++){
@@ -491,6 +490,8 @@ int main()
     arma::mat beta;
     arma::mat covariance;
     arma::mat dxMat;
+    arma::mat VARPara;
+    arma::mat VECPara;
     arma::mat lag;
     arma::mat dLag;
     arma::mat residualDX;
@@ -503,7 +504,7 @@ int main()
     arma::mat C;
     arma::mat stats;
     arma::mat test;
-
+    
 
     xMat = loadCSV("GLD-GDX.csv");
     saveMatCSV(xMat, "xMat60.csv");
@@ -529,30 +530,29 @@ int main()
     saveMatCSV(I, "I.csv");
     ******************************************************************/
 
-    auto VARPara = getVARPara(xMat, lag, eye(size(xMat.n_rows - (lag.n_cols - 1)/xMat.n_cols, xMat.n_rows - (lag.n_cols - 1)/xMat.n_cols)));
-    //saveMatCSV(VARPara, "VAR_Para.csv");
-    auto VECPara = getVECMPara(VARPara).t();
-    //saveMatCSV(VECPara, "VECM_Para.csv"); // R - GAMMA
-    // checking VAR/VEC Para
+    VARPara = getVARPara(xMat, lag, eye(size(xMat.n_rows - (lag.n_cols - 1)/xMat.n_cols, xMat.n_rows - (lag.n_cols - 1)/xMat.n_cols)));
+    saveMatCSV(VARPara, "VAR_Para.csv"); 
+    VECPara = getVECMPara(VARPara);
+    saveMatCSV(VECPara, "VECM_Para.csv"); // GAMMA
 
     eigenInput = getEigenInput(xMat, dLag, 16);
-    //saveMatCSV(eigenInput, "Eigeninput.csv");
+    saveMatCSV(eigenInput, "Eigeninput.csv");
 
     eigvec = getEigenOutput(eigenInput); // e
-    //saveMatCSV(eigvec, "Eigenvec.csv");
+    saveMatCSV(eigvec, "Eigenvec.csv");
 
     eigval = getEigenVal(eigenInput); // lambda
-    //saveMatCSV(eigval, "Eigenval.csv");
+    saveMatCSV(eigval, "Eigenval.csv");
 
     C = loadCSV("C.csv");
     Vorg = getVorg(C, eigvec);
-    //saveMatCSV(Vorg, "Vorg.csv"); // to 3dp accuracy
+    saveMatCSV(Vorg, "Vorg.csv"); // to 3dp accuracy
 
     // Perform the statistics test
     stats = getStatistics(eigval, dLag);
-    //saveMatCSV(stats, "stats.csv");
-
+    saveMatCSV(stats, "stats.csv");
+    
     cVals c = cVals();
     test = getTest(stats, xMat, c);
-    //saveMatCSV(test, "results.csv");
+    saveMatCSV(test, "results.csv");
 }

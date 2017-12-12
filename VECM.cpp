@@ -210,8 +210,8 @@ arma::mat VECM::computeBeta()
     auto observation = _observation;
     lag_matrix.shed_row(0);
     observation.shed_rows(observation.n_rows - (lag_matrix.n_cols - 1)/observation.n_cols, observation.n_rows - 1);
-    arma::mat _beta = regressOLS(lag_matrix, observation);
-    return _beta;
+    arma::mat beta = regressOLS(lag_matrix, observation);
+    return beta;
 }
 
 arma::mat VECM::computeVARPara()
@@ -221,7 +221,7 @@ arma::mat VECM::computeVARPara()
     auto observation = _observation;
     lag_matrix.shed_row(0);
     observation.shed_rows(observation.n_rows - (lag_matrix.n_cols - 1)/observation.n_cols, observation.n_rows - 1);
-    arma::mat VARPara = regressGLS(lag_matrix, observation, arma::eye(arma::size(observation.n_rows, observation.n_rows)));
+    arma::mat VARPara = regressOLS(lag_matrix, observation);
 
     return VARPara;
 }
@@ -297,6 +297,7 @@ arma::mat VECM::computeGamma()
     return VEC;
 }
 
+// load data to _observation
 arma::mat VECM::loadCSV(const std::string& filename)
 {
     arma::mat A = arma::mat();
@@ -314,8 +315,6 @@ arma::mat VECM::loadCSV(const std::string& filename)
     }
 
     _observation = A;
-
-    saveMatCSV(_observation, "fuck.csv");
 
     return A;
 }
@@ -368,8 +367,8 @@ void VECM::getEigenInput() // _observation = x, _d_lag_matrix = Z
     Z0 <- Z[, 1:P] #Z0 only picking the first # of stocks of cols, i.e the first difference data only
     ***/
     arma::mat Z1 = _d_lag_matrix.cols(P, _d_lag_matrix.n_cols - 1);
-    arma::mat B = arma::ones<arma::mat>(_Z1.n_rows, 1);
-    Z1 = join_rows(B, _Z1);
+    arma::mat B = arma::ones<arma::mat>(Z1.n_rows, 1);
+    Z1 = join_rows(B, Z1);
     // Z1 <- Z[, -c(1:P)] shed the first P cols
     // Z1 <- cbind(1, Z1) # Z1
     arma::mat ZK = _observation.rows(1, N - _lag);
@@ -442,6 +441,7 @@ arma::mat VECM::getStatistics()
     n.fill(-N);
 
     stats = n % log(one - eigen); // already negative
+    saveMatCSV(stats, "vecm_test.csv");
 
     return stats;
 }

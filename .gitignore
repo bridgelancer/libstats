@@ -2,6 +2,8 @@ vec
 vecm
 
 *.csv
+!GLD-GDX.csv
 
 .ycm_*
 .vscode/
+JohansenCointegration/
