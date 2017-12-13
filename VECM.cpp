@@ -205,7 +205,6 @@ arma::mat VECM::computeLagMatrix()
 
 arma::mat VECM::computeBeta()
 {
-    // @TODO need to sort out the matrix multiplication error
     auto lag_matrix = _lag_matrix;
     auto observation = _observation;
     lag_matrix.shed_row(0);
@@ -216,7 +215,6 @@ arma::mat VECM::computeBeta()
 
 arma::mat VECM::computeVARPara()
 {
-    // @TODO need to sort out the matrix multiplication error
     auto lag_matrix = _lag_matrix;
     auto observation = _observation;
     lag_matrix.shed_row(0);
@@ -233,8 +231,6 @@ arma::mat VECM::computeGamma()
     int ncols = _VARPara.n_cols;
 
     arma::mat VEC = arma::mat(nrows, ncols);
-
-    saveMatCSV(VEC, "daughter.csv");
 
     for (int i = 0; i < ncols; i++){
         for (int j = nrows -1 ; j >= 0; j--){
@@ -289,9 +285,6 @@ arma::mat VECM::computeGamma()
             //}
         //}
     //}
-
-    saveMatCSV(_VARPara, "damn.csv");
-    saveMatCSV(VEC, "son.csv");
 
     VEC.shed_rows(0, _VARPara.n_cols-1);
     return VEC;
@@ -441,7 +434,6 @@ arma::mat VECM::getStatistics()
     n.fill(-N);
 
     stats = n % log(one - eigen); // already negative
-    saveMatCSV(stats, "vecm_test.csv");
 
     return stats;
 }
