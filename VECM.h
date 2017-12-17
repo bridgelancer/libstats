@@ -1,5 +1,6 @@
 #include <armadillo>
 
+// @TODO Should be using the OLS of the OLS class instead, sort out class dependency
 arma::mat regressOLS(arma::mat X, arma::mat Y)
 {
     // beta = (X.t() * X).i() * X.t() * Y;
@@ -9,6 +10,7 @@ arma::mat regressOLS(arma::mat X, arma::mat Y)
     return beta;
 }
 
+// @TODO This is not working at the moment
 arma::mat regressGLS(arma::mat X, arma::mat Y, arma::mat covariance)
 {
     arma::mat beta;
@@ -21,6 +23,7 @@ arma::mat regressGLS(arma::mat X, arma::mat Y, arma::mat covariance)
     return beta;
 }
 
+// @TODO Ad hoc procedure, consider the class structure and hierarchy
 arma::mat pivoted_cholesky(const arma::mat & A, double eps, arma::uvec & pivot)
 {
     if(A.n_rows != A.n_cols)
@@ -91,6 +94,15 @@ arma::mat pivoted_cholesky(const arma::mat & A, double eps, arma::uvec & pivot)
     return L;
 }
 
+// @TODO DOCUMENTATION of the process - The documentation of this class and the related VECM.cpp file
+//       is deferred to a later stage, after all necessary details are implemented.
+
+// For the current state of this class, please refer to the VEC.cpp file documentation
+
+// This class is an implmentation of the URCA R package cajo.R file, with a plan to further implement
+// FGLS - Feasible Generalized Least Square estimation instead of the current OLS method.
+
+// Variable naming follows the cajo.R file in general.
 class VECM {
 public:
     VECM();

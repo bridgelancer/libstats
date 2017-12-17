@@ -3,11 +3,17 @@
 #include <iomanip>
 #include <cmath>
 
-// @TODO change function signature to VEC::function();
+// This class has already been implemented to a relevant class structure "VECM.h" and its corresponding .cpp files
+// This class was verified against the outcome of cajo.R using the dataset GLD-GDX.csv attached with this repository
+
+// The file stands as a stand alone, development version of VECM.h/VEM.cpp, with suitable main function coded for testing
+// Warning: Executing this file produces numerous .csv outputs (mainly for checking purposes)
+
 using namespace arma;
 
-// Do not commit until FGLS is fixed
+// Do not commit until FGLS is implemented
 
+// Critical values of eigenvalues of Johansen Test
 struct cVals
 {
     arma::mat eigen = { {6.5, 8.18, 11.65},
@@ -23,6 +29,8 @@ struct cVals
                         {65.07, 68.27, 74.36}, };
 };
 
+// Code modified from some sources online for implmeenting Johansen test
+// See pivoted cholesky process for detailes
 arma::mat pivoted_cholesky(const arma::mat & A, double eps, arma::uvec & pivot) {
     if(A.n_rows != A.n_cols)
       throw std::runtime_error("Pivoted Cholesky requires a square matrix!\n");
@@ -92,10 +100,10 @@ arma::mat pivoted_cholesky(const arma::mat & A, double eps, arma::uvec & pivot) 
     return L;
 }
 
-// by default, the output precision is up to 4 dp
-// if the precision is changed to nPrecision dp, pls change the term (4 + 3/2) to (nPrecision + 3/2) respectively;
+// By default, the output precision is up to 4 dp
+// If the precision is changed to nPrecision dp, pls change the term (4 + 3/2) to (nPrecision + 3/2) respectively;
 
-// can use raw_print instead?
+// @TODO Consider using rawprint instead of direct manipulation of stream
 void saveMatCSV(arma::mat Mat, std::string filename)
 { 
     std::ofstream stream = std::ofstream();
@@ -162,11 +170,13 @@ void saveMatCSV(arma::mat Mat, std::string filename)
     stream.close();
 }
 
+// Saving comple matrix arma::cx_mat Mat
 void saveMatCSV(arma::cx_mat Mat, std::string filename)
 { 
     Mat.save(filename, arma::csv_ascii);
 }
 
+// For convenience, the class implementation should utilize the method derived from the OLS class instead
 arma::mat regressOLS(arma::mat X, arma::mat Y)
 {
     // beta = (X.t() * X).i() * X.t() * Y; 
@@ -176,7 +186,7 @@ arma::mat regressOLS(arma::mat X, arma::mat Y)
     return beta;
 }
 
-// @TODO - depends on getCovarianceMatrix
+// @TODO - This is currently not working, dependent on function getCovarianceMatrix
 arma::mat regressGLS(arma::mat X, arma::mat Y, arma::mat covariance)
 {
     arma::mat beta;
@@ -189,7 +199,7 @@ arma::mat regressGLS(arma::mat X, arma::mat Y, arma::mat covariance)
     return beta;
 }
  
-// @TODO - might not need this?
+// @TODO - FGLS-related feature, not working at the moment
 arma::mat getCovarianceMatrix(arma::mat beta, arma::mat xMat, arma::mat lag)
 {
     arma::mat error = arma::mat(xMat.n_rows, xMat.n_cols);
@@ -206,6 +216,7 @@ arma::mat getCovarianceMatrix(arma::mat beta, arma::mat xMat, arma::mat lag)
 
 
 // xMat should have the latest data at front, the last nlags # of observations will be discarded
+// getLagMatrix produce the lagged series of the original xMat data
 arma::mat getLagMatrix(arma::mat xMat, int nlags)
 {
     int nrows = xMat.n_rows;
@@ -235,9 +246,9 @@ arma::mat getLagMatrix(arma::mat xMat, int nlags)
     return lag;
 }
 
+
 arma::mat getBeta(arma::mat xMat, arma::mat lag, int nlags)
 {
-    // @TODO need to sort out the matrix multiplication error
     lag.shed_row(0);
     xMat.shed_rows(xMat.n_rows - (lag.n_cols - 1)/xMat.n_cols, xMat.n_rows - 1);
     saveMatCSV(xMat, "xMatShed.csv");
@@ -247,7 +258,6 @@ arma::mat getBeta(arma::mat xMat, arma::mat lag, int nlags)
 
 arma::mat getVARPara(arma::mat xMat, arma::mat lag, arma::mat covariance)
 {
-    // @TODO need to sort out the matrix multiplication error
     lag.shed_row(0);
     xMat.shed_rows(xMat.n_rows - (lag.n_cols - 1)/xMat.n_cols, xMat.n_rows - 1);
     arma::mat VARPara = regressGLS(lag, xMat, covariance); //regressGLS currently not working
@@ -313,6 +323,8 @@ arma::mat loadCSV(const std::string& filename)
 }
 
 // may consider giving back the first row
+// getMatrixDiff subtract the newer data from the lagged data
+// @TODO Consider reimplementeing the function with standard armadillo methods
 arma::mat getMatrixDiff(arma::mat lag, arma::mat xMat)
 {
     int nrows = lag.n_rows;
@@ -484,6 +496,7 @@ arma::mat getTest(arma::mat stats, arma::mat xMat, cVals c)
     return test;
 }
 
+// The main function is largely implemented in the class structure of "VECM.compute"
 int main()
 {
     arma::mat xMat;

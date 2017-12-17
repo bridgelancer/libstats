@@ -312,7 +312,7 @@ arma::mat VECM::loadCSV(const std::string& filename)
     return A;
 }
 
-// may consider giving back the first row
+// may consider adding back the first row
 arma::mat VECM::getMatrixDiff()
 {
     int nrows = _lag_matrix.n_rows;
@@ -470,9 +470,10 @@ arma::mat VECM::getVECModel()
     return _Gamma;
 }
 
+// Finished testing, the main function could be commented out
 int main()
 {
     VECM vecm;
-    vecm.loadCSV("GLD-GDX.csv");
+    vecm.loadCSV("GLD-GDX.csv"); // GLD-GDX.csv is the required file for testing the class
     vecm.compute(16);
 }

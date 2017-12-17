@@ -1,3 +1,6 @@
+// This document is superseded by VECM.h and VECM.cpp, and has no inherent value in itself
+
+/*
 #include <armadillo>
 
 arma::mat regressOLS(const arma::mat&Y, );
@@ -66,3 +69,4 @@ private:
 // .cpp
 VEC::crit_eigen = {{...}};
 
+*/
