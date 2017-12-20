@@ -113,7 +113,7 @@ void saveMatCSV(arma::mat Mat, std::string filename)
     int ncols = Mat.n_cols;
 
     stream << std::setprecision(4);
-    stream.setf( std::ios::fixed, std:: ios::floatfield );
+    stream.setf(std::ios::fixed, std::ios::floatfield);
     
     arma::vec maxVal = arma::vec(ncols);
     arma::vec minVal = arma::vec(ncols);

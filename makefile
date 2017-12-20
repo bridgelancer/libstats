@@ -20,6 +20,8 @@ clean:
 vecm:	VECM.cpp
 	$(CXX) $^ -o $@ $(CXXFLAGS) $(LDFLAGS) -ggdb
 
+kalmanSource:   kalmanSource.cpp VECM.cpp
+	$(CXX) -Dunix -DHAVE_FFT -ISigPack-1.2.2/sigpack $^ -o $@ $(CXXFLAGS) $(LDFLAGS) -ggdb 
 
 
 
