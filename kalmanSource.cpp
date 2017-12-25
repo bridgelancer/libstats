@@ -138,7 +138,6 @@ arma::mat getLagMatrix(arma::mat xMat, int nlags)
     return lag.submat(0,0, lag.n_rows-1 , 1);
 }
 
-using namespace std;
 using namespace sp;
 int main()
 {
@@ -214,6 +213,7 @@ int main()
         kalman.get_state_vec().raw_print(std::cout, "x");
         kalman.set_meas_mat(H.row(n)); //set measurement matrix as H
         kalman.predict();
+        kalman.get_err_cov().raw_print(std::cout, "P'");
         //arma::mat measurement = arma::join_rows(arma::ones<mat>(1,1), price_lagged.submat(n+1, 0, n+1, 0));
         kalman.update(price_lagged.submat(n+1, 0, n+1, 0)); //price_lagged.row(n+1).t() is the "1/2" measurments obtained at time n+1 and fed to update
         // all state_vec, err, err_cov are updated
@@ -228,6 +228,7 @@ int main()
     // if smoothing is utilized, which type of smoothing is used
     saveMatCSV(x_log, "predict");
     saveMatCSV(e_log, "err");
+    saveMatCSV(P_log, "covariance");
     saveMatCSV(price_lagged, "measure");
 
 

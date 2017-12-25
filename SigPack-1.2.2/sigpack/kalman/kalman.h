@@ -235,6 +235,8 @@ namespace sp
                 z_err = z - H*x; //using predicted x @TODO BUG H*x is 1*1 currently
                 x = x + K*z_err; //updaing new estimates
 
+                K.raw_print(std::cout, "KGain");
+
                 // Joseph’s form covariance update
                 arma::mat Jf = arma::eye<arma::mat>(N,N)-K*H;
                 P = Jf*P*Jf.t() + K*R*K.t();
