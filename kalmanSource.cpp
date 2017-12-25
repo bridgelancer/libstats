@@ -149,8 +149,8 @@ int main()
 
     hVec.raw_print(std::cout, "hVec:");
 
-    arma::uword N = 2;  // Nr of states
-    arma::uword M = 2;  // Nr of measurements
+    arma::uword N = 1;  // Nr of states
+    arma::uword M = 1;  // Nr of measurements
     arma::uword L = 1;  // Nr of inputs
 
     // Instatiate a Kalman Filter
@@ -181,17 +181,14 @@ int main()
 
     hVec.raw_print(std::cout, "hVec:");
 
-    arma::mat init = {0, 0.1166};
+    arma::mat init = {0.1166};
     kalman.set_state_vec(init.t());
 
-    arma::mat A =
-    {
-        {1, 0},
-        {0, 1}
-    };
+    arma::mat A = {1};
+
     kalman.set_trans_mat(A); //set A as the state transition matrix (change of x/y based on hedge ratio)
 
-    arma::mat H = arma::join_rows(arma::ones<mat>(price_lagged.n_rows , 1), price_lagged.col(1));
+    arma::mat H = price_lagged.col(1);
 
     // Determine covariance structure -> currently using one without covariance between variables (spec of VECM?)
     arma::mat P = P0*arma::eye(N,N); //set P = 10*In
@@ -205,8 +202,8 @@ int main()
     arma::mat R = R0*arma::eye(1,1); // 25 * I -> R should not be zero
     kalman.set_meas_noise(R); //set measure noice matrix as R = 0
 
-    arma::mat x_log(Nsamp, N); //storing every state of x for each Nsamp
-    arma::mat e_log(Nsamp, 1); //storing every error associated with state x
+    arma::mat x_log(Nsamp - 1, N); //storing every state of x for each Nsamp
+    arma::mat e_log(Nsamp - 1, 1); //storing every error associated with state x
     arma::cube P_log(N, N, Nsamp); //storing every error covariance matrix associated with state x
     arma::mat xs_log(Nsamp, M); //storing the smoothen x as xs
     arma::cube Ps_log(N, N, Nsamp);//storing the smoothen error covariance matrix as Ps
@@ -218,7 +215,7 @@ int main()
         kalman.set_meas_mat(H.row(n)); //set measurement matrix as H
         kalman.predict();
         //arma::mat measurement = arma::join_rows(arma::ones<mat>(1,1), price_lagged.submat(n+1, 0, n+1, 0));
-        kalman.update(price_lagged.submat(n+1, 0, n+1, 0)); //price_lagged.row(n+1).t() is the "2" measurments obtained at time n+1 and fed to update
+        kalman.update(price_lagged.submat(n+1, 0, n+1, 0)); //price_lagged.row(n+1).t() is the "1/2" measurments obtained at time n+1 and fed to update
         // all state_vec, err, err_cov are updated
         x_log.row(n) = kalman.get_state_vec().t(); //updating x_log, the current state of x to be displayed
         e_log.row(n) = kalman.get_err().t(); //updating the error associated with state x
@@ -228,14 +225,11 @@ int main()
     }
    
     // Consider whether we need any smoothing for Kalman fiter result to determine our strategy,
-    // If smoothing is utilized, which type of smoothing is used
-
+    // if smoothing is utilized, which type of smoothing is used
     saveMatCSV(x_log, "predict");
     saveMatCSV(e_log, "err");
     saveMatCSV(price_lagged, "measure");
 
-    // RTS smoother
-    kalman.rts_smooth(x_log,P_log,xs_log,Ps_log);
 
     return 1;
 }
