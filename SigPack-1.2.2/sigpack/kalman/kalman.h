@@ -183,7 +183,7 @@ namespace sp
             void set_err_cov(const arma::mat& _P)         { P = _P;   }    // Set error covariance matrix.[NxN]
             void set_proc_noise(const arma::mat& _Q)      { Q = _Q;   }    // Set process noise cov. matrix.
             void set_meas_noise(const arma::mat& _R)      { R = _R;   }    // Set meas noise cov. matrix.
-            mvoid set_kalman_gain(const arma::mat& _K)     { K = _K;   }    // Set Kalman gain matrix.[NxM]
+            void set_kalman_gain(const arma::mat& _K)     { K = _K;   }    // Set Kalman gain matrix.[NxM]
             void set_trans_fcn(fcn_v _f)    // Set state transition functions
             {
                 f = _f;
@@ -207,9 +207,9 @@ namespace sp
             void predict(const arma::mat u )
             {
                 x = A*x+B*u;      // New state
-                P = A*P*A.t()+Q;  // New error covariance, 
-                                  // Q needs to be pre-set by set_proc_noise, 
-                                  // initial P is also set by set_err_cov.
+                P = A*P*A.t() + Q;  // New error covariance, 
+                                  // Q needs to be pre-set by set_proc_noise 
+                                  // Initial P is also set by set_err_cov
             }
 
             ////////////////////////////////////////////////////////////////////////////////////////////
@@ -229,12 +229,11 @@ namespace sp
             void update(const arma::mat z )
             {
                 // Compute the Kalman gain
-                K = P*H.t()*inv(H*P*H.t()+R); //Kalman gain calculated using updated P; 
+                K = P * H.t() * inv(H *P* H.t() + R); //Kalman gain calculated using updated P; 
                                               //R, the measurement noise, also needs to be set by set_meas_noise
-
                 // Update estimate with measurement z
-                z_err = z-H*x; //using old x
-                x = x+K*z_err; //updaing new estimates
+                z_err = z - H*x; //using predicted x @TODO BUG H*x is 1*1 currently
+                x = x + K*z_err; //updaing new estimates
 
                 // Joseph’s form covariance update
                 arma::mat Jf = arma::eye<arma::mat>(N,N)-K*H;

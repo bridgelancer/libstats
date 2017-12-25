@@ -5,7 +5,8 @@
 
 #include "VECM.h"
 
-arma::mat VECM::crit_eigen = { {6.5, 8.18, 11.65},
+arma::mat VECM::crit_eigen = { 
+{6.5, 8.18, 11.65},
 {12.91, 14.90, 19.19},
 {18.9, 21.07, 25.75},
 {24.78, 27.14, 32.14},
@@ -518,10 +519,12 @@ void VECM::getEigenOutput()
     eig_gen(_eigval, _eigvec, _eigenInput);
 }
 
-void VECM::getVorg()
+arma::mat VECM::getVorg()
 {
     arma::mat real = arma::real(_eigvec);
     _Vorg = (solve(_C, eye(size(_C)))).t() * real;
+
+    return _Vorg;
 }
 
 arma::mat VECM::getStatistics()

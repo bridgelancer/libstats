@@ -24,6 +24,7 @@ public:
     arma::mat getEigenVecMatrix();
 
     arma::mat getVECModel();
+    arma::mat getVorg();
 
 private:
     void saveMatCSV(arma::mat Mat, std::string filename);
@@ -42,7 +43,6 @@ private:
 
     void getEigenInput();
     void getEigenOutput();
-    void getVorg();
 
     arma::mat getStatistics();
 
