@@ -34,7 +34,7 @@ void saveMatCSV(arma::mat Mat, std::string filename)
     int nrows = Mat.n_rows;
     int ncols = Mat.n_cols;
 
-    stream << std::setprecision(4);
+    stream << std::setprecision(7);
     stream.setf(std::ios::fixed, std::ios::floatfield);
     
     arma::vec maxVal = arma::vec(ncols);
@@ -73,15 +73,15 @@ void saveMatCSV(arma::mat Mat, std::string filename)
         for (int j = 0; j < ncols; j++){
             if (maxVal(j) > 1){
                 if ( status(j) == 0 )
-                    stream << std::setfill(' ') << std::setw( (int)log10(maxVal(j)) + (4 + 3) ) << Mat(i, j); // setting width, extra 3 spaces are added for storing ".", negative sign, and (int)log(x) rounds down;
+                    stream << std::setfill(' ') << std::setw( (int)log10(maxVal(j)) + (7 + 3) ) << Mat(i, j); // setting width, extra 3 spaces are added for storing ".", negative sign, and (int)log(x) rounds down;
                 else if ( status(j) == 1 )
-                    stream << std::setfill(' ') << std::setw( (int)log10(maxVal(j)) + (4 + 2) ) << Mat(i, j); // setting width, extra 2 spaces are added for storing ".", and (int)log(x) rounds down;
+                    stream << std::setfill(' ') << std::setw( (int)log10(maxVal(j)) + (7 + 2) ) << Mat(i, j); // setting width, extra 2 spaces are added for storing ".", and (int)log(x) rounds down;
             }
             else {
                 if ( status(j) == 0 )
-                    stream << std::setfill(' ') << std::setw( (int)log10(1 + maxVal(j)) + (4 + 3) ) << Mat(i, j); // setting width, extra 3 spaces are added for storing ".", negative sign, and (int)log(x) rounds down;
+                    stream << std::setfill(' ') << std::setw( (int)log10(1 + maxVal(j)) + (7 + 3) ) << Mat(i, j); // setting width, extra 3 spaces are added for storing ".", negative sign, and (int)log(x) rounds down;
                 else if ( status(j) == 1 )
-                    stream << std::setfill(' ') << std::setw( (int)log10(1 + maxVal(j)) + (4 + 2) ) << Mat(i, j); // setting width, extra 2 spaces are added for storing ".", and (int)log(x) rounds down;
+                    stream << std::setfill(' ') << std::setw( (int)log10(1 + maxVal(j)) + (7 + 2) ) << Mat(i, j); // setting width, extra 2 spaces are added for storing ".", and (int)log(x) rounds down;
             }
 
             if (j != ncols - 1)
@@ -148,8 +148,8 @@ int main()
 
     hVec.raw_print(std::cout, "hVec:");
 
-    arma::uword N = 1;  // Nr of states
-    arma::uword M = 1;  // Nr of measurements
+    arma::uword N = 2;  // Nr of states
+    arma::uword M = 2;  // Nr of measurements
     arma::uword L = 1;  // Nr of inputs
 
     // Instatiate a Kalman Filter
@@ -180,14 +180,17 @@ int main()
 
     hVec.raw_print(std::cout, "hVec:");
 
-    arma::mat init = {0.1166};
+    arma::mat init = {0, 0.1166};
     kalman.set_state_vec(init.t());
 
-    arma::mat A = {1};
+    arma::mat A = {
+        {1, 0},
+        {0, 1}
+    };
 
     kalman.set_trans_mat(A); //set A as the state transition matrix (change of x/y based on hedge ratio)
 
-    arma::mat H = price_lagged.col(1);
+    arma::mat H = arma::join_rows(arma::ones<mat>(price_lagged.n_rows, 1) , price_lagged.col(1));
 
     // Determine covariance structure -> currently using one without covariance between variables (spec of VECM?)
     arma::mat P = P0*arma::eye(N,N); //set P = 10*In
@@ -211,10 +214,9 @@ int main()
     for(arma::uword n=0; n< Nsamp -1; n++)
     {
         kalman.get_state_vec().raw_print(std::cout, "x");
-        kalman.set_meas_mat(H.row(n)); //set measurement matrix as H
+        kalman.set_meas_mat(H.row(n+1)); //set measurement matrix as H
         kalman.predict();
         kalman.get_err_cov().raw_print(std::cout, "P'");
-        //arma::mat measurement = arma::join_rows(arma::ones<mat>(1,1), price_lagged.submat(n+1, 0, n+1, 0));
         kalman.update(price_lagged.submat(n+1, 0, n+1, 0)); //price_lagged.row(n+1).t() is the "1/2" measurments obtained at time n+1 and fed to update
         // all state_vec, err, err_cov are updated
         x_log.row(n) = kalman.get_state_vec().t(); //updating x_log, the current state of x to be displayed

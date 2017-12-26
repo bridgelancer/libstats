@@ -228,6 +228,8 @@ namespace sp
             ////////////////////////////////////////////////////////////////////////////////////////////
             void update(const arma::mat z )
             {
+                H.raw_print(std::cout, "H");
+                R.raw_print(std::cout, "R");
                 // Compute the Kalman gain
                 K = P * H.t() * inv(H *P* H.t() + R); //Kalman gain calculated using updated P; 
                                               //R, the measurement noise, also needs to be set by set_meas_noise
