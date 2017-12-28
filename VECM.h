@@ -1,15 +1,13 @@
 #include <armadillo>
 
 
-// @TODO DOCUMENTATION of the process - The documentation of this class and the related VECM.cpp file
-//       is deferred to a later stage, after all necessary details are implemented.
+// @TODO DOCUMENTATION of the process - The documentation of this class and the related VECM.cpp file is deferred to a later stage, after all necessary details are implemented.
 
 // For the current state of this class, please refer to the VEC.cpp file documentation
 
-// This class is an implmentation of the URCA R package cajo.R file, with a plan to further implement
-// FGLS - Feasible Generalized Least Square estimation instead of the current OLS method.
+// This class is an implmentation of the URCA R package cajo.R file, with a plan to further implement FGLS - Feasible Generalized Least Square estimation instead of the current OLS method.
 
-// Variable naming follows the cajo.R file in general.
+// Member variables naming follows the cajo.R file in general.
 class VECM {
 public:
     VECM();

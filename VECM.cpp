@@ -18,6 +18,7 @@ arma::mat VECM::crit_eigen = {
 {59.00, 62.42, 68.61},
 {65.07, 68.27, 74.36}, };
 
+// @TODO Consider using the OLS/GLS in-house library and factor these two out
 arma::mat regressOLS(arma::mat X, arma::mat Y)
 {
     // beta = (X.t() * X).i() * X.t() * Y;
@@ -27,6 +28,7 @@ arma::mat regressOLS(arma::mat X, arma::mat Y)
     return beta;
 }
 
+// Currently not working, should implement a FGLS version.
 arma::mat regressGLS(arma::mat X, arma::mat Y, arma::mat covariance)
 {
     arma::mat beta;
