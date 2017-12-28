@@ -519,6 +519,11 @@ void VECM::getEigenOutput()
     eig_gen(_eigval, _eigvec, _eigenInput);
 }
 
+arma::mat VECM::getObservation()
+{
+    return _observation;
+}
+
 arma::mat VECM::getVorg()
 {
     arma::mat real = arma::real(_eigvec);

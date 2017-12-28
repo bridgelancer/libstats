@@ -5,12 +5,10 @@
 
 using namespace arma;
 
-// the first three functions would be removed from the real kalman class implmentation
+// the first three functions would be removed from the real kalman fucntion** implmentation
 
-// compare with 1 day before or 16 days before? Is it right to directly change hedge ratio using one day data?
 // measurement error matrix = 0? other structure?
 // validity of variable
-// what is the real hedge ratio from VECM?
 
 arma::mat loadCSV(const std::string& filename)
 { 
@@ -34,7 +32,7 @@ void saveMatCSV(arma::mat Mat, std::string filename)
     int nrows = Mat.n_rows;
     int ncols = Mat.n_cols;
 
-    stream << std::setprecision(7);
+    stream << std::setprecision(4);
     stream.setf(std::ios::fixed, std::ios::floatfield);
     
     arma::vec maxVal = arma::vec(ncols);
@@ -73,15 +71,15 @@ void saveMatCSV(arma::mat Mat, std::string filename)
         for (int j = 0; j < ncols; j++){
             if (maxVal(j) > 1){
                 if ( status(j) == 0 )
-                    stream << std::setfill(' ') << std::setw( (int)log10(maxVal(j)) + (7 + 3) ) << Mat(i, j); // setting width, extra 3 spaces are added for storing ".", negative sign, and (int)log(x) rounds down;
+                    stream << std::setfill(' ') << std::setw( (int)log10(maxVal(j)) + (4 + 3) ) << Mat(i, j); // setting width, extra 3 spaces are added for storing ".", negative sign, and (int)log(x) rounds down;
                 else if ( status(j) == 1 )
-                    stream << std::setfill(' ') << std::setw( (int)log10(maxVal(j)) + (7 + 2) ) << Mat(i, j); // setting width, extra 2 spaces are added for storing ".", and (int)log(x) rounds down;
+                    stream << std::setfill(' ') << std::setw( (int)log10(maxVal(j)) + (4 + 2) ) << Mat(i, j); // setting width, extra 2 spaces are added for storing ".", and (int)log(x) rounds down;
             }
             else {
                 if ( status(j) == 0 )
-                    stream << std::setfill(' ') << std::setw( (int)log10(1 + maxVal(j)) + (7 + 3) ) << Mat(i, j); // setting width, extra 3 spaces are added for storing ".", negative sign, and (int)log(x) rounds down;
+                    stream << std::setfill(' ') << std::setw( (int)log10(1 + maxVal(j)) + (4 + 3) ) << Mat(i, j); // setting width, extra 3 spaces are added for storing ".", negative sign, and (int)log(x) rounds down;
                 else if ( status(j) == 1 )
-                    stream << std::setfill(' ') << std::setw( (int)log10(1 + maxVal(j)) + (7 + 2) ) << Mat(i, j); // setting width, extra 2 spaces are added for storing ".", and (int)log(x) rounds down;
+                    stream << std::setfill(' ') << std::setw( (int)log10(1 + maxVal(j)) + (4 + 2) ) << Mat(i, j); // setting width, extra 2 spaces are added for storing ".", and (int)log(x) rounds down;
             }
 
             if (j != ncols - 1)
@@ -142,8 +140,10 @@ using namespace sp;
 int main()
 {
     VECM vecm;
+    unsigned int nlags = 16;
+
     vecm.loadCSV("GLD-GDX.csv");
-    vecm.compute(16);
+    vecm.compute(nlags);
     arma::mat hVec = vecm.getVorg(); //"hedge ratio" vector - @TODO check output format
 
     hVec.raw_print(std::cout, "hVec:");
@@ -164,7 +164,7 @@ int main()
     double dT = 1;
 
     arma::mat data = loadCSV("GLD-GDX.csv");
-    arma::mat price_lagged = data.submat(16, 0 , 59, 1); //The 17th data to the 60th
+    arma::mat price_lagged = data.submat(nlags, 0 , data.n_rows - 1 , 1); //The 17th data to the 60th
 
     saveMatCSV(price_lagged, "price_lagged");
 
@@ -230,7 +230,6 @@ int main()
     // if smoothing is utilized, which type of smoothing is used
     saveMatCSV(x_log, "predict");
     saveMatCSV(e_log, "err");
-    saveMatCSV(P_log, "covariance");
     saveMatCSV(price_lagged, "measure");
 
 

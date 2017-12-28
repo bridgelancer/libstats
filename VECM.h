@@ -17,6 +17,9 @@ public:
     ~VECM();
 
     arma::mat loadCSV(const std::string& filename);
+    void saveMatCSV(arma::mat Mat, std::string filename);
+    void saveMatCSV(arma::cx_mat Mat, std::string filename);
+    
     void compute(int nlags);
 
     arma::mat getTest(arma::mat stats);
@@ -25,11 +28,9 @@ public:
 
     arma::mat getVECModel();
     arma::mat getVorg();
+    arma::mat getObservation();
 
 private:
-    void saveMatCSV(arma::mat Mat, std::string filename);
-    void saveMatCSV(arma::cx_mat Mat, std::string filename);
-
     //void preprocess();
 
     arma::mat computeCovarianceMatrix();

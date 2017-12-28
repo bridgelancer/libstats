@@ -23,5 +23,8 @@ vecm:	VECM.cpp
 kalmanSource:   kalmanSource.cpp VECM.cpp
 	$(CXX) -Dunix -DHAVE_FFT -ISigPack-1.2.2/sigpack $^ -o $@ $(CXXFLAGS) $(LDFLAGS) -ggdb 
 
+kf:	kfWrapper.cpp VECM.cpp
+	$(CXX) -Dunix -DHAVE_FFT -ISigPack-1.2.2/sigpack $^ -o $@ $(CXXFLAGS) $(LDFLAGS) -ggdb
+
 
 

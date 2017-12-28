@@ -1,0 +1,13 @@
+# Documentation for kfWrapper class
+
+The integration of the wrapper class **kFWrapper** is still not completed. The intended result of this integration would be a class that holds a **sp::KF** member for the acutal prediction and update of the time series.
+
+This class should be called **after** the **VECM** class. The **VECM** class uses Johansesn Test to check whether cointegrating relationship exists. The kfWrapper class is for the updating of the hedge ratio generated from the VECM class according to new, updated prices.
+
+The **kfWrapper** class constructor consists of 5 inputs (N, M, L, _observation and _lag), where *N* is the number of states (2; to hold the constant and VECM generated hedge ratio to be updated), *M* is the number of measurements (correspond to the number of instruments within the portfolio; with form of [1 x1 x2 ...]), *L* is number of input (1), _observation is the 0th data point (i.e. the current measurement of the x1, x2 series) to be used for updating and prediction. _lag is the number of lag term used in the VECM model.
+
+Within the **kfWrapper**, the **sp::KF** member *"kalman"* needs to be further specified by four inputs (Vorg, _P0, _Q0, _R0). Vorg is the eigenvector matrix obtained from the class **VECM**. _P0, _Q0 and _R0 are parameters to tune the sp::KF class performance.
+
+After the setup, the class is ready to accept input from relevant feed structures from blackbox to call the function **kfWrapper::updateKF**. Together with the input updated_price delivered to the function, the **updateKF** function would call **kfWrapper::kalmanLoop**. **kalmanLoop** would then set the measurement matrix H of the **sp::KF** member, predict and update the state vector, and log the results to _x_log, _e_log and _P_log. The updated price received from feed would become the new _observation member stored within the wrapper for the next iteration.
+
+This class was warped from the file **kalmanSource.cpp**. The validity of the output from **kalmanSource.cpp** has been counterchecked against hand calculation. We used GLD_GDX.csv as the series, with 16 lags. As mentioned before, the integration of this wrapper class is incomplete, and the checking of the relevant transformation from a matrix representation to one that suits the feed and system is still underway.
