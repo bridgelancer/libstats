@@ -4,6 +4,9 @@ vecm
 *.csv
 !GLD-GDX.csv
 
+*.pdf
+*.log
+
 .ycm_*
 .vscode/
 JohansenCointegration/
